@@ -168,7 +168,8 @@ days_between("1-Apr-2026", "31-Aug-2026")
 
 # list what the package dplyr contains
 ls("package:dplyr")
-# print the dataset starwars that is in the dplyr package
+# print the dataset starwars dataframe that is in the dplyr package
+class(dplyr::starwars)
 print(dplyr::starwars)
 # show all variable names of the dataset
 names(dplyr::starwars)
