@@ -55,11 +55,32 @@
 # Note that this works different on a Mac, there you do not work with RTools, but with 
 # Appl's developer toolchain instead
 # see https://mac.r-project.org/tools/
+# ----------------------------------------------------------------
 
 
-# 01 Set up the environment -------------------------------------------------------------
-# always include this section 01 in the scripts that you develop next for user functions and loading default packages
+# 01 Set up the environment ------------------------------------------------------------
+# run the setup script
 source(here::here("scripts", "01-setup.R"))
 # authenticate Google Sheets access
 gsheets_auth() # authenticate google sheets access
+
+# 02 Simple calculations -----------------------------------------
+# assigning variables, using functions from a package
+# ----------------------------------------------------------------
+1+3
+# use built-in function from a package
+base::sqrt(9)
+# assign variables
+a<-1
+b<-3
+a+b
+c<-a+b
+c
+base::sum(a,b) 
+# check the class of a variable
+class(a)
+#  use built-in function from another package than base
+lubridate::floor_date(lubridate::dmy("29-Aug-2026"), 
+                                      unit = "week",
+                                      week_start = 1)
 
