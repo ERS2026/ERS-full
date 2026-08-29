@@ -128,3 +128,9 @@ days_between("1-Apr-2026", "31-Aug-2026")
 ls("package:dplyr")
 # print the dataset starwars that is in the dplyr package
 print(dplyr::starwars)
+# show all variable names of the dataset
+names(dplyr::starwars)
+# show all levels of the variable name as a vector
+dplyr::starwars$name
+# frequency table of home world
+table(dplyr::starwars$homeworld)
