@@ -78,7 +78,7 @@ source(here::here("scripts", "01-setup.R"))
 here::here()
 
 
-# 04 Simple calculations -----------------------------------------
+# 04 Simple calculations and vectors-------------------------------
 # assigning variables, using functions from a core package
 # ----------------------------------------------------------------
 1+3
@@ -88,6 +88,13 @@ sqrt(9)
 base::sqrt(9)
 # but for core packages as base (that come with the default R installation)
 # you typicallly do not specify from which package the function comes
+
+# inspecting the code for a built-in function (from a core package)
+a<-c(1,2,3)
+b<-10
+base::append(a,b)
+?base::append()
+base::append
 
 # assigning and printing (show the contents) of variables
 a<-1
@@ -101,10 +108,24 @@ print(c)
 # check the class of a variable
 class(a)
 
+# defining vectors
+days<-c(1,2,3,4,5,6)
+bodymass_g<-c(2,3,5,7,9,11)
+base::plot(days,bodymass_g)
+
 # 05 using non-core package functions ---------------------------
 # then specify ALWAYS as package::function(parameter1, parameter2)
 # because the same function may exist in different packages
 # ----------------------------------------------------------------
+
+# show help on the lubridate package
+?lubridate
+# list the functions in the lubridate package
+ls(package:lubridate)
+# get help on the function floor_date from lubridate
+?lubridate::floor_date
+
+
 # calculate the date of the monday of the same week of a date
 lubridate::floor_date(lubridate::dmy("29-Aug-2026"), 
                                       unit = "week",
@@ -112,6 +133,8 @@ lubridate::floor_date(lubridate::dmy("29-Aug-2026"),
 
 # 06 writing your own functions -----------------------------------
 # function days_between to calculate the number of days between two dates
+# note that your new function can use existing functions from packages
+# as here the function dmy() is used from package lubridate
 # usage example: 
 # days_between("31-Aug-2026", "4-Apr-2026")
 
@@ -126,7 +149,7 @@ days_between("1-Apr-2026", "31-Aug-2026")
 # most packages contain especially functions, but sometime also (example) datasets
 # ----------------------------------------------------------------
 
-# list what a package contains
+# list what the package dplyr contains
 ls("package:dplyr")
 # print the dataset starwars that is in the dplyr package
 print(dplyr::starwars)
