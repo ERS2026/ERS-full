@@ -66,10 +66,11 @@ print(EVI2001_2023)
 # That is what you want in a collaborative project.
 
 # 07 Introduction example online database ----------------
-# We explore this  with this example database  (explore by copy-paste the link below in your browser):
+# We explore this  with this example database  - open in your browser with crtl + click :
 # https://docs.google.com/spreadsheets/d/1m-liu8omZMewqz_YP9j_YUmQ0zwATl3z4aRLnZFnfWc/edit?usp=sharing
 
 # This is a Google Sheets database that only exists in one location in the cloud.
+# so all of us view the same database - there is only one version of the data
 # It is a relational database, with multiple tables (sheets) that are linked to each other.
 # The database is set up as a Star Schema, which is a particular way of organising data in a relational database.
 # The database contains data on a study on the effects of wildlife on vegetation in East Africa.
