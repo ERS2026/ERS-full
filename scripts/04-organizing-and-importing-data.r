@@ -143,7 +143,7 @@ names(transdat)
 transdat$FactSectionAnimals
 
 
-# 13 Using ggplot for plotting  ----------------
+# 13 Using ggplot for plotting  -----------------------------------------------------
 # ggplot2 is a powerfull library allowing all kind of scientific visualisations/plots
 ggplot2::ggplot(data=transdat$FactSectionAnimals, 
                 mapping=aes(x=SpCode2,y=CountLeft)) +
@@ -159,19 +159,21 @@ ggplot2::ggplot() +
 # the species codes are in the table DimSpecies
 transdat$DimSpecies
 
-
+# 14 joining data from different tables ---------------------------------------------
 # join the two tables using a left_join with SpCode2 as the key variable linking the tables 
 # always put the table with the most rows first, so that you do not lose any rows
 alldata<-dplyr::left_join(transdat$FactSectionAnimals,transdat$DimSpecies,by=c("SpCode2"="SpCode2"))
 # check the 'environment' tab in R Studio topright in your screen that you are adding variables not rows!
 # inspect the data by printing the first few lines
+
 names(alldata)
 # now make the boxplot again, but now with the full species names, flip the plot 90 degrees
+
 
 ggplot2::ggplot(data=alldata, 
                 mapping=aes(x=Name_eng,y=CountLeft)) +
   geom_boxplot() +
   labs(x="Species",y="Transect count") +
-  coord_flip)
+  coord_flip()
 
 # This makes a boxplot of the number of animals observed (CountLeft) for each species (CommonName)
