@@ -45,6 +45,18 @@ if (.Platform$OS.type == "windows") {
   message("Not running on Windows; Rtools is not applicable.")
 }
 
+# check if git is found on the system 
+check_git <- function() {
+  git_path <- Sys.which("git")
+  
+  if (git_path == "") {
+    message("Git was NOT found on this computer.")
+  } else {
+    message("Git was found at: ", git_path)
+  }
+}
+check_git()
+
 # 04 Install frequently used packages ---------------------------
 # put packages here that you use  frequently in several scripts of your project
 # note that tidyverse is not a single package, but a metapackage 
