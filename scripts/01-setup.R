@@ -98,16 +98,13 @@ message("Checking and restoring project package environment using renv...")
 renv::restore()
 
 
-# 05 Load frequently used libraries ----------------------------------
-# Put libraries here that you frequntly use in different scripts
+# 05 Load your  list of packages 
 # --------------------------------------------------------------------
 
 suppressPackageStartupMessages({
-  library(googlesheets4)
-  library(purrr)
-  library(tidyverse)
-  library(patchwork)
-  library(httpuv)
+  invisible(
+    lapply(packages, library, character.only = TRUE)
+  )
 })
 
 
