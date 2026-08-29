@@ -21,6 +21,9 @@ system2("git",c("-C", here::here(), "pull"))
 # show which package namespaces are loaded to memory with library()
 search()
 
+# authenticate your @student.rug.nl google account
+gsheets_auth()
+
 
 # 03 Different ways to enter data ----------------
 # Data can be imported in different ways in R:\
@@ -130,62 +133,45 @@ print(EVI2001_2023)
 # as which species is observed, at which transect, etc
 
 # 12 Reading data from an online database ----------------
-# We will now read in one of the Fact tables from the example database
+# We will now read in an entire  database of transect data with multiple tables, including metadata
+# this used the function read_gsdb that you defined in the script 01-setup.r
+# this produced a named list object, where the elements of the object are different tibbles
+transdat<-read_gsdb("https://docs.google.com/spreadsheets/d/1m-liu8omZMewqz_YP9j_YUmQ0zwATl3z4aRLnZFnfWc")
+# it contains the following tibbles
+names(transdat)
+# show the tibble FactSectionAnimals (or explore in the panel Variables)
+transdat$FactSectionAnimals
 
-# first read MetTables as this contains the links to read the tables
-# define the link to read the FactSectionAnimals table
-MetTables_link<-"https://docs.google.com/spreadsheets/d/e/2PACX-1vTtMDeI9k2M2xsukcZm-kE_gbYi3kYJDfbp1vEGKtpajM84GSFYrpd2U0P3kqgnbLQUKhhHciDZpV-j/pub?gid=1387882554&single=true&output=csv"
-MetTables<-readr::read_csv(MetTables_link)
-MetTables
-
-# Now we can read the FactSectionAnimals table using the link in the MetTables table
-FactSectionAnimals_link<-MetTables |>
-  dplyr::filter(data_table=="FactSectionAnimals") |>
-  dplyr::pull(CSV_link)
-FactSectionAnimals_link
-# read the link into R as a tibble
-FactSectionAnimals<-readr::read_csv(FactSectionAnimals_link)
-FactSectionAnimals
-# this uses the function read_csv() from the readr package, which is part of the tidyverse
-# This loads the dataset directly from Google Sheets into R, there are not intermediate files.
-# If they data change in Google Sheets, then the new version will be loaded when the read_csv() 
-# function is run again 
-# check the result in the 'environment' tab in R Studio topright in your screen
-# or inspect the data by printing the first few lines
-print(FactSectionAnimals)
-names(FactSectionAnimals)
 
 # 13 Using ggplot for plotting  ----------------
 # ggplot2 is a powerfull library allowing all kind of scientific visualisations/plots
-ggplot2::ggplot(data=FactSectionAnimals, 
+ggplot2::ggplot(data=transdat$FactSectionAnimals, 
                 mapping=aes(x=SpCode2,y=CountLeft)) +
   geom_boxplot()
-
+# or use with the same outcome 
 ggplot2::ggplot() +
-  geom_boxplot(data=FactSectionAnimals, 
+  geom_boxplot(data=transdat$FactSectionAnimals, 
                mapping=aes(x=SpCode2,y=CountLeft))
 # This makes a boxplot of the number of animals observed (CountLeft) for each species (Spcode6)
 # You can see that the species codes are not very informative.
 # We can link the species codes to the DimSpecies table to get the full species names
 
-# read in the DimSpecies table from MetTables
-DimSpecies_link<-MetTables |>
-  dplyr::filter(data_table=="DimSpecies") |>
-  dplyr::pull(CSV_link)
-# read the DimSpecies table into R
-DimSpecies<-readr::read_csv(DimSpecies_link)
-print(DimSpecies)
+# the species codes are in the table DimSpecies
+transdat$DimSpecies
+
 
 # join the two tables using a left_join with SpCode2 as the key variable linking the tables 
 # always put the table with the most rows first, so that you do not lose any rows
-FactSectionAnimals2<-dplyr::left_join(FactSectionAnimals,DimSpecies,by=c("SpCode2"="SpCode2"))
+alldata<-dplyr::left_join(transdat$FactSectionAnimals,transdat$DimSpecies,by=c("SpCode2"="SpCode2"))
 # check the 'environment' tab in R Studio topright in your screen that you are adding variables not rows!
 # inspect the data by printing the first few lines
-print(FactSectionAnimals2)
-# now make the boxplot again, but now with the full species names
-ggplot2::ggplot(data=FactSectionAnimals2, 
+names(alldata)
+# now make the boxplot again, but now with the full species names, flip the plot 90 degrees
+
+ggplot2::ggplot(data=alldata, 
                 mapping=aes(x=Name_eng,y=CountLeft)) +
   geom_boxplot() +
   labs(x="Species",y="Transect count") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  coord_flip)
+
 # This makes a boxplot of the number of animals observed (CountLeft) for each species (CommonName)
