@@ -172,8 +172,7 @@ class(date_var) # inspect its class
 # Date objects support date arithmetic.
 date_var + 40
 
-
-# Different input formats for dates and times--------------------------------------
+# Different input formats for dates and times
 
 # dmy() parses dates written as day-month-year.
 date_var <- lubridate::dmy("18-Dec-2023") 
@@ -183,8 +182,7 @@ date_var
 date_var <- lubridate::ymd_hms("2023-12-18 14:30:00")
 date_var
 
-
-# Time zones --------------------------------------------------------------------
+# Time zones 
 
 # Interpret the stated clock time as local time in the Netherlands.
 date_var <- lubridate::ymd_hms("2023-12-18 14:30:00", 
@@ -199,15 +197,12 @@ date_var <- lubridate::ymd_hms("2023-12-18 14:30:00",tz="Africa/Nairobi")
 date_var
 
 
-# 07 Functions and statistical models -------------------------------------------
+# 07 Statistical functions -------------------------------------------
 # Functions take inputs (arguments), perform operations, and return results.
 # ------------------------------------------------------------------------------
 
 # R contains many built-in functions.
 base::sqrt(16) # calculate the square root of 16
-
-
-# Statistical functions ---------------------------------------------------------
 
 # Statistical analyses are also implemented as functions.
 # simple one: calculate the mean
@@ -221,12 +216,14 @@ y<-c(3,5,4,8,11)
 model1<-stats::lm(y~x) # fit a linear model of y as a function of x using the lm() function
 
 # model1 is an object of class "lm".
-# Internally, an lm object is a named list containing many model components.
+# Internally, an lm object is a named list containing many model components
+# each model component as the original data, fitted coefficients, residuals, fit etc are stored as list elements
 str(model1) 
 class(model1)
 print(unclass(model1))
 
-# Individual components of the model can be accessed with $.
+# Individual elements of the model named list object can be accessed with $
+# so that they can be used in further data analyses
 model1$coefficients # coefficients: intercept and slope
 model1$coefficients[2] # slope
 model1$coefficients[1] # intercept
@@ -239,18 +236,6 @@ print(lm) # display the lm function definition
 
 # Open the help page to inspect its arguments, description, and examples.
 ?lm
-
-
-# Writing your own function ------------------------------------------------------
-
-# Define a function that calculates the area of a circle.
-circle_area <- function(radius) { # radius is an argument of the function
-  area <- pi * radius^2 # calculate A = pi * r^2
-  return(area) # return the calculated value
-}
-
-# Call the function with radius = 5.
-circle_area(5) # the function returns the area
 
 
 # 08 Methods of a function -------------------------------------------------------

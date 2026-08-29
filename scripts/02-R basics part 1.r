@@ -182,6 +182,15 @@ days_between <- function(from, to) {
 # use the function for a calculation
 days_between("1-Apr-2026", "31-Aug-2026")
 
+# Define a function that calculates the area of a circle.
+circle_area <- function(radius) { # radius is an argument of the function
+  area <- pi * radius^2 # calculate area as A = pi * r^2
+  return(area) # return the calculated value
+}
+# Call the function: calculate the area of a circle with area  = 5
+circle_area(5) # the function returns the area
+
+
 # 07 datasets in packages -------------------------------------------
 # most packages contain especially functions, but sometime also (example) datasets
 # ----------------------------------------------------------------
