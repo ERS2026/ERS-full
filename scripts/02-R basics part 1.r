@@ -119,15 +119,32 @@ class(a)
 
 # objects can hold more than one value: create vectors 
 days<-c(1,2,3,4,5,6)
+days
+class(days)
 bodymass_g<-c(2,3,5,7,9,11)
 base::plot(days,bodymass_g)
 
-# create even more complex objects
+# a list is a collection of different objects, which can be of different types and lengths
+# such as text, numbers or boolean variables, create a simple list:
+elephant_properties <- list(
+  name = "Elephant",
+  weight = 5400,
+  is_endangered = TRUE,
+  colors = c("gray", "white")
+)
+elephant_properties
+# show only the weight 
+elephant_properties$weight
+
+
+# a dataframe is a special type of list with rows and columns (variables)
 students <- data.frame(
   name = c("Alex", "Sam", "Robin"),
   age = c(21, 23, 20)
 )
 print(students)
+# in practice, we typically read a dataframe from a file, not create it ourselves in a script like this
+
 
 # 05 using non-core package functions ---------------------------
 # then specify ALWAYS as package::function(parameter1, parameter2)
