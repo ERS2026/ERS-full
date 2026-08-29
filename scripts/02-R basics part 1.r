@@ -62,7 +62,7 @@
 # ----------------------------------------------------------------
 
 # 02 Set up your environment -------------------------------------
-# run the setup script, authenticate google etc
+# run the setup script, containing restore packages, helper functions, etc
 source(here::here("scripts", "01-setup.R"))
 # ----------------------------------------------------------------
 
