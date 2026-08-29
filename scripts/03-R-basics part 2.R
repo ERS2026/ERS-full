@@ -80,7 +80,7 @@ data_herbivores$species # print the species column in data_herbivores (which bec
 data_herbivores |> dplyr::select(species, bodymass_kg) # select the species and bodymass_kg columns from data_herbivores
 data_herbivores |> dplyr::filter(bodymass_kg > 100) # filter the rows where bodymass_kg is greater than 100
 
-# A tibble is a modern version of a data frame, which is part of the tidyverse
+# A tibble is a special version of a data frame, which is part of the tidyverse
 # it shows the types of the variables, and only the first 10 rows and columns that fit on the screen
 data_herbivores |> tibble::as_tibble() 
 
@@ -108,38 +108,33 @@ log_var2 # print the value of log_var2
 class(log_var2) # print the class of log_var2
 
 
-# 06 Data types - dates and time ----------------
-date_var <- as.Date("2023-01-12", format="%Y-%m-%d") # assign the value "2023-01-01" to the variable date_var
-?strptime # check the help file of this function for the format codes
+# 06 Dates and time ----------------
+date_var<-"2023-01-12"
+class(date_var)
+date_var + 40
+date_var <- lubridate::ymd("2023-01-12") # assign the value "2023-01-01" to the variable date_var
 date_var # print the value of date_var
 class(date_var) # print the class of date_var
-
-# But it is generally easier to use the lubridate package, 
-# when working with dates without worrying about the format strings
-date_var2 <- lubridate::ymd("2023-12-18") # assign the value 18-dec-2023 to the variable date_var2 using lubridate
-date_var2 # print the value of date_var2
-class(date_var2) # print the class of date_var2
+date_var + 40
 # You can also use lubridate to work with dates in different formats
-date_var3 <- lubridate::dmy("18-Dec-2023") # assign the value 18-dec-2023 to the variable date_var3 using lubridate
-date_var3 # print the value of date_var3
-class(date_var3) # print the class of date_var3
-# You can also use lubridate to work with dates in different formats
-date_var4 <- lubridate::mdy("Dec 18, 2023") # assign the value 18-dec-2023 to the variable date_var4 using lubridate
-date_var4 # print the value of date_var4
-class(date_var4) # print the class of date_var4
-# You can also use lubridate to work with dates combined with time in different formats
-date_var5 <- lubridate::ymd_hms("2023-12-18 14:30:00") # assign the value "2023-12-18 14:30:00" to the variable date_var5 using lubridate
-date_var5 # print the value of date_var5
-# date variables can be used in calculations 
-date_var6 <- date_var5 + lubridate::days(10) # add 10 days to date_var5 and store it in a new variable date_var6
-date_var6 # print the value of date_var6
-# default time zone is UTC (similar to GMT, Greenwich time)
-# find the time zone name  for Nairobi using Olsen names
+# assign the value 18-Dec-2023 to the variable date_var3 using lubridate
+date_var <- lubridate::dmy("18-Dec-2023") 
+date_var
+# assign the value "2023-12-18 14:30:00" to the variable date_var5 using lubridate
+date_var <- lubridate::ymd_hms("2023-12-18 14:30:00")
+date_var
+# adjust if it would represent local time in the Netherlands
+date_var <- lubridate::ymd_hms("2023-12-18 14:30:00", 
+                                tz = "Europe/Amsterdam") 
+date_var
+# adjust if it would represent local time in Kenya
+# first find the time zone name  for Tanzania/Kenya using Olsen names
 grep("Nairobi", OlsonNames(), value = TRUE)
-date_var7 <- lubridate::ymd_hms("2023-12-18 14:30:00",tz="Africa/Nairobi") # assign the value "2023-12-18 14:30:00" to the variable date_var5 using
-date_var7
+date_var <- lubridate::ymd_hms("2023-12-18 14:30:00",tz="Africa/Nairobi")
+date_var
 
-# 07 functions ----------------
+
+# 07 statistical functions ----------------
 # R has many built-in functions, for example the sqrt() function to calculate the square root of a number
 
 base::sqrt(16) # calculate the square root of 16
