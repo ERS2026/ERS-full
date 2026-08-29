@@ -38,12 +38,22 @@ if (!requireNamespace("pkgbuild", quietly = TRUE)) {
 # https://github.com/OlffLab/2026_OlfflabRepoTemplate/blob/main/docs/building%20packages%20on%20MacOS.pdf
 # -----------------------------------------------------------------
 
-if (.Platform$OS.type == "windows") {
-  message("Checking Rtools RTools installation status...")
-  pkgbuild::has_rtools(debug = TRUE)
+check_rtools <- function() {
+  
+  if (.Platform$OS.type == "windows") {
+    message("Checking Rtools installation status...")
+    
+    if (pkgbuild::has_rtools(debug = TRUE)) {
+      message("Rtools is installed and available.")
+    } else {
+      message("Rtools was NOT found or is not configured correctly.")
+    }
+    
   } else {
-  message("Not running on Windows; Rtools is not applicable.")
+    message("Not running on Windows; Rtools is not applicable.")
+  }
 }
+check_rtools()
 
 # check if git is found on the system 
 check_git <- function() {
