@@ -1,16 +1,14 @@
-##### ----------------------------description---------------------------------
-# # 01-setup.R - Han Olff - June 2026
-# This script is the first script to run in the project. 
-# this is typically done by sourcing the script in the R console or in the RStudio IDE by putting at the start of every script: source("scripts/01-setup.R")
-# Functionally in this script is that it clears the environment,
-#  restores the packages in the renv.lock file, sets the timezone to UTC, loads the required libraries and defines user functions.
-# user functions defined here can be used in any other script in the project after sourcing this script.
-# Functions defined here are for example the function read_gsdb() to read a Google Sheets database and the function gsheets_auth() to authenticate Google Sheets access.
-#####-------------------------------------------------------------------------
+# 01 Header ------------------------------------------------------
+# title: setting your working environment
+# use: include in your script with source(here::here("scripts", "01-setup.R"))
+# author: Han Olff
+# date: 2026-08-29
+# project: ERS2026
+# -----------------------------------------------------------------
 
-# ============================================================
-# Project setup
-# ============================================================
+# 01 Project setup -----------------------------------------------
+# clear workspace, set cran mirror, check missing packages
+# ----------------------------------------------------------------
 
 # Clear the current R workspace
 rm(list = ls())
@@ -21,11 +19,7 @@ options(repos = c(CRAN = "https://cran.r-project.org"))
 # Set timezone to UTC to avoid date/time inconsistencies
 Sys.setenv(TZ = "UTC")
 
-
-# ============================================================
-# Install required setup packages if missing
-# ============================================================
-
+# Check renv and pkgbuild
 if (!requireNamespace("renv", quietly = TRUE)) {
   install.packages("renv")
 }
@@ -34,15 +28,15 @@ if (!requireNamespace("pkgbuild", quietly = TRUE)) {
   install.packages("pkgbuild")
 }
 
-
-# ============================================================
-# Check system build tools
-# ============================================================
-
+# 03 Check system build tools -------------------------------------
 # Windows:
 # R packages installed from source may require Rtools.
 # If this check fails, install the correct Rtools version from:
 # https://cran.r-project.org/bin/windows/Rtools/
+# Note that RTools is not used on macOS.
+# Source package compilation uses Xcode Command Line Tools instead, see" 
+# https://github.com/OlffLab/2026_OlfflabRepoTemplate/blob/main/docs/building%20packages%20on%20MacOS.pdf
+# -----------------------------------------------------------------
 
 if (.Platform$OS.type == "windows") {
   message("Checking Rtools RTools installation status...")
@@ -51,16 +45,8 @@ if (.Platform$OS.type == "windows") {
   message("Not running on Windows; Rtools is not applicable.")
 }
 
-# macOS:
-# Rtools is not used on macOS.
-# Source package compilation uses Xcode Command Line Tools instead.
-# See:
-# https://github.com/OlffLab/2026_OlfflabRepoTemplate/blob/main/docs/building%20packages%20on%20MacOS.pdf
-
-
-# ============================================================
-# Restore project package environment
-# ============================================================
+# 04 Restore project package environment---------------------------
+# -----------------------------------------------------------------
 
 packages <- c(
   "here",
@@ -80,14 +66,16 @@ if (length(missing)) {
   install.packages(missing)
 }
 
-
-# Restore packages recorded in renv.lock if needed. This ensures that the project uses the same package versions as specified in the lockfile.
+# 05 Restore packages in renv.lock
+# this ensures that the project uses the same package versions as specified in the lockfile
+# -----------------------------------------------------------------
 message("Checking and restoring project package environment using renv...")
 renv::restore()
 
-# ============================================================
-# Load required libraries
-# ============================================================
+
+# 05 Load frequently used libraries ----------------------------------
+# Put libraries here that you frequntly us in different scripts
+# --------------------------------------------------------------------
 
 suppressPackageStartupMessages({
   library(googlesheets4)
@@ -97,14 +85,11 @@ suppressPackageStartupMessages({
   library(httpuv)
 })
 
-# ============================================================
-# Define helper functions
-# ============================================================
 
-##### 1) Function read_gsdb to read specific sheets from a gsheets database or the whole database
-# 
-# Usage examples : 
-#
+# 06 read_gsdb helper function definition ---------------------------------
+# This function reads specific sheets from a Google Sheets database or the whole database
+# Usage examples:
+#  
 # 1 - Read all sheets in a database, no filter, all sheets are put in a list object (default)
 # database_link <- "https://docs.google.com/spreadsheets/d/<SHEET_ID>"
 # database <- read_gsdb(database_link)
@@ -119,10 +104,7 @@ suppressPackageStartupMessages({
 #                  Species      = ~ !is.na(Species_ID),
 #                  Transects    = ~ Region == "Loita",
 #                  Observations = ~ cover > 0))
-
-
-library(googlesheets4)
-library(purrr)
+# --------------------------------------------------------------------
 
 read_gsdb <- function(database, sheets = NULL, separate = FALSE, verbose = TRUE) {
   if (is.null(sheets)) {
@@ -166,8 +148,18 @@ read_gsdb <- function(database, sheets = NULL, separate = FALSE, verbose = TRUE)
   }
 }
 
-
-##### --- Function to authenticate with Google Sheets (googlesheets4) ----------------------------
+# 07 gsheets_auth helper function definition ------------------------------------
+# Function to authenticate you with Google Sheets (googlesheets4)  
+# Usage examples: 
+#
+# 1. for interactive use, asking for account to authenticate every time, use:
+# gsheets_auth()  
+#
+# 2. Only first time authentication based on your email (google) account, use:
+# gsheets_auth(email = "your.name@student.rug.nl")
+# after authenticating first time through the browser,
+# a token is stored that authenticates you next time
+# -------------------------------------------------------------------------------
 suppressPackageStartupMessages(library(googlesheets4))
 
 gsheets_auth <- function(

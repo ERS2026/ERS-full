@@ -57,12 +57,9 @@
 # see https://mac.r-project.org/tools/
 
 
-#--------------------------01 Set up the environment ----
-# always include this section 01 in your other scripts!
-# First pull the latest changes to this repo from the Github repository 
-system2("git",c("-C",here::here(),"pull"))
-# run the Setup script for user-defined functions 
+#====================01 Set up the environment ==========
+# always include this section 01 in the scripts that you develop next for user functions and loading default packages
 source(here::here("scripts", "01-setup.R"))
 # authenticate Google Sheets access
-gsheets_auth() # authenticate google sheets access, this will open a browser window for authentication if not already authenticated, note this function is defined in script 01-setup.r
+gsheets_auth(user=h.olff@rug.nl) # authenticate google sheets access, this will open a browser window for authentication if not already authenticated, note this function is defined in script 01-setup.r
 # load libraries specific for this script (that are not in 01-setup.R)
