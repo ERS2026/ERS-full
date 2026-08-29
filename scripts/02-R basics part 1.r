@@ -143,6 +143,7 @@ students <- data.frame(
   age = c(21, 23, 20)
 )
 print(students)
+barplot(age~name, data=students)
 # in practice, we typically read a dataframe from a file, not create it ourselves in a script like this
 
 
