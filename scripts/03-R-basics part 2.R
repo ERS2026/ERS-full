@@ -33,7 +33,7 @@ print(class_size) # print the value stored in class_size
 # The equals sign = can also be used for assignment, but <- is conventional in R.
 
 
-# Logical comparison operators --------------------------------------------------
+# Logical comparison operators 
 
 class_size == 32 # is class_size equal to 32? Returns TRUE or FALSE
 class_size != 35 # is class_size different from 35?
@@ -43,7 +43,7 @@ class_size >= 28 # is class_size greater than or equal to 28?
 class_size <= 28 # is class_size less than or equal to 28?
 
 
-# Calculations with variables ---------------------------------------------------
+# Calculations with variables 
 
 # Variables can be used in calculations.
 double_class_size <- class_size * 2 # calculate twice the class size and store the result
@@ -60,7 +60,7 @@ total_students <- class_size + double_class_size + half_class_size # add three v
 total_students # display the result
 
 
-# Updating variables ------------------------------------------------------------
+# Updating variables 
 
 # An existing variable can be assigned a new value.
 class_size
@@ -68,7 +68,7 @@ class_size <- 30 # replace the previous value of class_size with 30
 class_size # display the new value
 
 
-# Vectors -----------------------------------------------------------------------
+# Vectors 
 
 # A vector is an ordered collection of values.
 # Vectors can contain numeric, character, or logical values.
@@ -107,7 +107,7 @@ class(data_herbivores) # inspect the class of the object
 data_herbivores$species # extract the species column as a vector
 
 
-# Selecting and filtering with dplyr --------------------------------------------
+# Selecting and filtering with dplyr 
 
 # The pipe operator |> passes the result on the left to the function on the right.
 # allows a sequence of operations on a dataframe or tibble
@@ -116,7 +116,7 @@ megaherbivores<-data_herbivores |>
   dplyr::filter(bodymass_kg > 100) # keep rows with body mass > 100 kg
 megaherbivores
 
-# Tibbles -----------------------------------------------------------------------
+# Tibbles 
 # A tibble is a modern version of a data frame used by the tidyverse.
 # Its print method displays variable types and limits the output to rows and
 # columns that fit conveniently on screen.
@@ -258,7 +258,7 @@ summary(model1)
 summary(model1)
 
 
-# Inspecting methods -------------------------------------------------------------
+# Inspecting methods 
 
 # methods() lists the available methods for a generic function.
 methods("summary") # display methods available for summary()
