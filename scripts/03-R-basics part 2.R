@@ -3,184 +3,282 @@
 # author: Han Olff
 # date: 2026-08-29
 # project: ERS2026
-# purpose: Explain variables, vectors, operators, lists, dataframes, tibbles
-# ----------------------------------------------------------------
+# purpose: Introduce variables, vectors, operators, data frames, tibbles,
+#          data types, dates, functions, models, and methods
+# ------------------------------------------------------------------------------
 
 
-# 02 Setup your environment -------------------------------------
-# run the setup script, containing restore packages, helper functions, etc
-# ----------------------------------------------------------------
+# 02 Setup your environment -----------------------------------------------------
+# Run the common setup script and synchronize the local project with GitHub.
+# ------------------------------------------------------------------------------
 
-# run the setup script
+# Run the setup script containing package restoration, helper functions, etc.
 source(here::here("scripts", "01-setup.R"))
 
-# pull the changes in the online repository to this local folder
-# this is important when you collaborate on the project
+# Pull changes from the online repository into this local project folder.
+# This is especially important when collaborating on the same project.
 system2("git",c("-C", here::here(), "pull"))
 
 
+# 03 Variables, vectors, and operators ------------------------------------------
+# Variables are named objects used to store values.
+# ------------------------------------------------------------------------------
+
+# Create a variable
+class_size <- 32 # assign the value 32 to the variable class_size
+print(class_size) # print the value stored in class_size
+
+# The equals sign = can also be used for assignment, but <- is conventional in R.
 
 
-# 03 Variables, vectors, operators  ----------------
-# Variables are used to store values, for example the number 3.14 in a variable called class_size (number of students in this class)
-class_size <- 32 # assign the value 28 to the variable class_size
-print(class_size) # print the value of the variable class_size
-# You can also use the equals sign = for assignment, but the arrow <- is better in R
+# Logical comparison operators --------------------------------------------------
 
-# operators for logical comparison
-class_size == 32 # is the value of class_size equal to 30? This will return TRUE or FALSE
-class_size != 35 # is the value of class_size not equal to 30?
-class_size > 20 # is the value of class_size greater than 20?
-class_size < 20 # is the value of class_size less than 20?
-class_size >= 28 # is the value of class_size greater than or equal to 28?
-class_size <= 28 # is the value of class_size less than or equal to 28?
+class_size == 32 # is class_size equal to 32? Returns TRUE or FALSE
+class_size != 35 # is class_size different from 35?
+class_size > 20 # is class_size greater than 20?
+class_size < 20 # is class_size less than 20?
+class_size >= 28 # is class_size greater than or equal to 28?
+class_size <= 28 # is class_size less than or equal to 28?
 
-# You can use variables in calculations
-double_class_size <- class_size * 2 # double the value of class_size and store it in a new variable double_class_size
-double_class_size # print the value of double_class_size
+
+# Calculations with variables ---------------------------------------------------
+
+# Variables can be used in calculations.
+double_class_size <- class_size * 2 # calculate twice the class size and store the result
+double_class_size # display the value of double_class_size
+
+# Calculations can also be performed directly.
 (2+3-5+26)/5
 
-# You can also use variables in calculations with other variables
-half_class_size <- class_size / 2 # halve the value of class_size and store it in a new variable half_class_size
-half_class_size # print the value of half_class_size
-total_students <- class_size + double_class_size + half_class_size # sum the values of class_size, double_class_size and half_class_size and store it in a new variable total_students
-total_students # print the value of total_students
-# You can change (update) the value of a variable
-class_size
-class_size <- 30 # change the value of class_size to 30
-class_size # print the value of class_size
+# Variables can be combined with other variables in calculations.
+half_class_size <- class_size / 2 # calculate half the class size
+half_class_size # display the value of half_class_size
 
-# You can also create   vectors, which are ordered collections of values
-# A vector can contain numbers, characters, or logical values
-# You can create a vector using the c() function, which stands for "combine"
-# Create a numeric vector with the numbers 1, 2, 3, 4
+total_students <- class_size + double_class_size + half_class_size # add three variables
+total_students # display the result
+
+
+# Updating variables ------------------------------------------------------------
+
+# An existing variable can be assigned a new value.
+class_size
+class_size <- 30 # replace the previous value of class_size with 30
+class_size # display the new value
+
+
+# Vectors -----------------------------------------------------------------------
+
+# A vector is an ordered collection of values.
+# Vectors can contain numeric, character, or logical values.
+# The c() function ("combine") creates a vector.
+
 numeric_vector <- c(1, 2, 3, 4) 
-print(numeric_vector) # print the value of numeric_vector
-# you can calculate with vectors same as you did with above
+print(numeric_vector) # display the complete vector
+
+# Operations on a vector are normally applied element by element.
 numeric_vector*2
+
+# Inspect the class of the object.
 class(numeric_vector)
 
-# 04 data frames and tibbles ----------------
 
-# A data frame is a table-like structure, where each column can be of a different type (numeric, character, logical)
-# a dataframe is a list where the different elements (=variables) have the same number of objects, that become
-# the rows of the dataframe
-# Create a simple data frame
+# 04 Data frames and tibbles ----------------------------------------------------
+# Data frames organize variables as columns and observations as rows.
+# ------------------------------------------------------------------------------
+
+# A data frame is a table-like object.
+# Each column is a vector and different columns can have different data types.
+# A data frame is also a special type of list in which the columns have the
+# same length, allowing them to form rows.
+
 data_herbivores <- data.frame(
   id = c(1, 2, 3),
-  species = c("Elephant", "Buffalo", "Impala"),
-  bodymass_kg = c(5400, 800, 50),
+  species = c("Elephant", "Rhino", "Impala"),
+  bodymass_kg = c(5400, 1200, 50),
   is_ungulate = c(FALSE, TRUE, TRUE)
 )
-data_herbivores # print  data_herbivores dataframe
-names(data_herbivores) # print the names of the variables in data_herbivores
-class(data_herbivores) # print the class of data_herbivores
-data_herbivores$species # print the species column in data_herbivores (which becomes a vector)
-# selecting rows and columns of a dataframe using the dplyr library plus the pipe operator |>
-data_herbivores |> dplyr::select(species, bodymass_kg) # select the species and bodymass_kg columns from data_herbivores
-data_herbivores |> dplyr::filter(bodymass_kg > 100) # filter the rows where bodymass_kg is greater than 100
 
-# A tibble is a special version of a data frame, which is part of the tidyverse
-# it shows the types of the variables, and only the first 10 rows and columns that fit on the screen
-data_herbivores |> tibble::as_tibble() 
-
-# 05 Data types - numeric and logical ----------------
-# There are several data types in R, the most common are:
-# Numeric: numbers with or without decimal points
-num_var <- 3.14 # assign the value 3.14 to the variable num_var
-num_var # print the value of num_var
-class(num_var) # print the class of num_var
-# Integer: whole numbers
-int_var <- 42L # assign the value 42 to the variable int_var, the L indicates that it is an integer
-int_var # print the value of int_var
-class(int_var) # print the class of int_var
-# Character: text strings
-char_var <- "Hello, R!" # assign the value "Hello, R!" to the variable char_var
-char_var # print the value of char_var
-class(char_var) # print the class of char_var
-# Logical: TRUE or FALSE values
-log_var <- TRUE # assign the value TRUE to the variable log_var
-log_var # print the value of log_var
-class(log_var) # print the class of log_var
-# You can also use FALSE
-log_var2 <- FALSE # assign the value FALSE to the variable log_var2
-log_var2 # print the value of log_var2
-class(log_var2) # print the class of log_var2
+# Inspect the data frame.
+data_herbivores # display the complete data frame
+names(data_herbivores) # display the names of its variables (columns)
+class(data_herbivores) # inspect the class of the object
+data_herbivores$species # extract the species column as a vector
 
 
-# 06 Dates and time ----------------
+# Selecting and filtering with dplyr --------------------------------------------
+
+# The pipe operator |> passes the result on the left to the function on the right.
+# allows a sequence of operations on a dataframe or tibble
+megaherbivores<-data_herbivores |>
+  dplyr::select(species, bodymass_kg) |> # select two columns
+  dplyr::filter(bodymass_kg > 100) # keep rows with body mass > 100 kg
+megaherbivores
+
+# Tibbles -----------------------------------------------------------------------
+# A tibble is a modern version of a data frame used by the tidyverse.
+# Its print method displays variable types and limits the output to rows and
+# columns that fit conveniently on screen.
+tibble::as_tibble(data_herbivores) 
+data_herbivores
+data_herbivores<-tibble::as_tibble(data_herbivores) 
+data_herbivores
+
+# 05 Data types -----------------------------------------------------------------
+# Common basic data types include numeric, integer, character, and logical.
+# ------------------------------------------------------------------------------
+
+# Numeric: numbers, including values with decimal points.
+num_var <- 3.14 # assign a numeric value
+num_var # display the value
+class(num_var) # inspect its class
+
+# Integer: whole numbers explicitly marked with L.
+int_var <- 42L # L tells R to store 42 as an integer
+int_var # display the value
+class(int_var) # inspect its class
+
+# Character: text enclosed in quotation marks.
+char_var <- "Hello, R!" # assign a character value
+char_var # display the value
+class(char_var) # inspect its class
+
+# Logical: TRUE or FALSE.
+log_var <- TRUE # assign TRUE
+log_var # display the value
+class(log_var) # inspect its class
+
+log_var2 <- FALSE # assign FALSE
+log_var2 # display the value
+class(log_var2) # inspect its class
+
+
+# 06 Dates and time -------------------------------------------------------------
+# Dates written between quotation marks start as character strings.
+# lubridate provides functions for converting them into date/time objects.
+# ------------------------------------------------------------------------------
+
+# A date written as text is still a character object.
 date_var<-"2023-01-12"
 class(date_var)
+
+# Arithmetic does not work as date arithmetic while the value is character.
 date_var + 40
-date_var <- lubridate::ymd("2023-01-12") # assign the value "2023-01-01" to the variable date_var
-date_var # print the value of date_var
-class(date_var) # print the class of date_var
+
+# Convert year-month-day text into a Date object.
+date_var <- lubridate::ymd("2023-01-12") # convert the character date to a Date
+date_var # display the date
+class(date_var) # inspect its class
+
+# Date objects support date arithmetic.
 date_var + 40
-# You can also use lubridate to work with dates in different formats
-# assign the value 18-Dec-2023 to the variable date_var3 using lubridate
+
+
+# Different input formats for dates and times--------------------------------------
+
+# dmy() parses dates written as day-month-year.
 date_var <- lubridate::dmy("18-Dec-2023") 
 date_var
-# assign the value "2023-12-18 14:30:00" to the variable date_var5 using lubridate
+
+# ymd_hms() parses year-month-day plus hours, minutes, and seconds.
 date_var <- lubridate::ymd_hms("2023-12-18 14:30:00")
 date_var
-# adjust if it would represent local time in the Netherlands
+
+
+# Time zones --------------------------------------------------------------------
+
+# Interpret the stated clock time as local time in the Netherlands.
 date_var <- lubridate::ymd_hms("2023-12-18 14:30:00", 
                                 tz = "Europe/Amsterdam") 
 date_var
-# adjust if it would represent local time in Kenya
-# first find the time zone name  for Tanzania/Kenya using Olsen names
+
+# Interpret the stated clock time as local time in Kenya.
+# Time zones in R use standard Olson/IANA time-zone names.
 grep("Nairobi", OlsonNames(), value = TRUE)
+
 date_var <- lubridate::ymd_hms("2023-12-18 14:30:00",tz="Africa/Nairobi")
 date_var
 
 
-# 07 Statistical functions ----------------
-# R has many built-in functions, for example the sqrt() function to calculate the square root of a number
+# 07 Functions and statistical models -------------------------------------------
+# Functions take inputs (arguments), perform operations, and return results.
+# ------------------------------------------------------------------------------
+
+# R contains many built-in functions.
 base::sqrt(16) # calculate the square root of 16
-# Also many stastistical analysis are implemented as functions
-# then the function returns the result of the analysis, often as a list
-# A statistical function applies a particular statistical analysis to data, such a linear regression
-# inspect the object produced by the lm function that calculates a linear regression
+
+
+# Statistical functions ---------------------------------------------------------
+
+# Statistical analyses are also implemented as functions.
+# simple one: calculate the mean
+mean(c(1,4,8))
+# but also more complex statistical analysis
+# lm() fits a linear model and returns an object containing the model results.
+# define the x and y variables
 x<-c(1,2,3,4,5)
 y<-c(3,5,4,8,11)
-model1<-lm(y~x) # linear model of y as a function of x
-# print the output, which is a named list
+
+model1<-stats::lm(y~x) # fit a linear model of y as a function of x using the lm() function
+
+# model1 is an object of class "lm".
+# Internally, an lm object is a named list containing many model components.
 str(model1) 
 class(model1)
 print(unclass(model1))
-model1$coefficients # print the coefficients of the model (slope and intercept)
-model1$coefficients[2] # print the slope of the model
-model1$coefficients[1] # print the intercept of the model
 
-summary(model1) # print the summary of the model  
+# Individual components of the model can be accessed with $.
+model1$coefficients # coefficients: intercept and slope
+model1$coefficients[2] # slope
+model1$coefficients[1] # intercept
 
-print(lm) # print the function lm (linear model) to see its arguments
-?lm # print the help file for the function lm, more usefull for the arguments
-
-# define yourself a function to calculate the area of a circle
-circle_area <- function(radius) { # define a function called circle_area that takes one argument, the radius
-  area <- pi * radius^2 # calculate the area of the circle using the formula A = πr^2
-  return(area) # return the value of area
-}
-# use the function to calculate the area of a circle with radius 5
-circle_area(5) # call the function circle_area with the argument 5
-
-
-#  08 Methods of a function  ----------------
-# In R, a method is a specific version of a function that is used for a particular class of object.
-# Functions can have different methods, which are specific implementations of the function depending on the of class of the object that they are applied to. 
-# For example, the summary() function has different methods for different classes of objects
-# apply the summary function to a vector object of class "numeric"
-vector<-c(1,2,3)
-# apply the summary function to an object of class "lm" the model1 object you calculated before
-summary(model1) 
-# apply the summary function to the model1 linear regression
+# summary() provides a more complete statistical summary of the fitted model.
 summary(model1)
 
-# You can see the different methods of a function using the methods() function on that function
-methods("summary") # print the methods for the summary function
-# so summary recognizes the class of the object, and then applies the appropriate method
-# so the above is equivalent to 
+# Functions themselves are objects and their definitions can often be inspected.
+print(lm) # display the lm function definition
+
+# Open the help page to inspect its arguments, description, and examples.
+?lm
+
+
+# Writing your own function ------------------------------------------------------
+
+# Define a function that calculates the area of a circle.
+circle_area <- function(radius) { # radius is an argument of the function
+  area <- pi * radius^2 # calculate A = pi * r^2
+  return(area) # return the calculated value
+}
+
+# Call the function with radius = 5.
+circle_area(5) # the function returns the area
+
+
+# 08 Methods of a function -------------------------------------------------------
+# A generic function can behave differently for different classes of objects.
+# These class-specific implementations are called methods.
+# ------------------------------------------------------------------------------
+
+# summary() is a generic function with methods for many classes of objects.
+
+# Create a numeric vector.
+vector<-c(1,2,3)
+
+# The numeric vector has class "numeric".
+# NOTE: the following line currently summarizes model1 rather than vector.
+summary(model1) 
+
+# Apply summary() to an object of class "lm".
+summary(model1)
+
+
+# Inspecting methods -------------------------------------------------------------
+
+# methods() lists the available methods for a generic function.
+methods("summary") # display methods available for summary()
+
+# R examines the class of an object and dispatches the appropriate method.
+# For a numeric vector, summary() falls back to summary.default().
+# For an lm object, it uses summary.lm().
+
 summary.default(vector)
 summary.lm(model1)
-

@@ -84,6 +84,9 @@ system2("git",c("-C", here::here(), "pull"))
 # show the root folder of your git-enabled project
 here::here()
 
+# and show which package namespaces are loaded to memory with library()
+search()
+
 
 # 04 assignments, calculations, vectors, lists dataframes---------
 # assigning  objects, using functions from a core package
