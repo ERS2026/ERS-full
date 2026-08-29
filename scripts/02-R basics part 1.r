@@ -85,8 +85,8 @@ system2("git",c("-C", here::here(), "pull"))
 here::here()
 
 
-# 04 Simple calculations and vectors-------------------------------
-# assigning creating objects, using functions from a core package
+# 04 assignments, calculations, vectors, lists dataframes---------
+# assigning  objects, using functions from a core package
 # ----------------------------------------------------------------
 1+3
 # use built-in function from a package
@@ -96,16 +96,7 @@ base::sqrt(9)
 # but for core packages as base (that come with the default R installation)
 # you typicallly do not specify from which package the function comes
 
-# inspecting the code for a built-in function (from a core package)
-a<-c(1,2,3)
-b<-10
-base::append(a,b)
-?base::append()
-base::append
-
-# create and print simple objects, as vectors
-
-# create vectors through the assignments operator <- (variables)
+# create objects through the assignments operator <- (variables)
 a<-1
 b<-3
 print(a+b)
@@ -123,6 +114,13 @@ days
 class(days)
 bodymass_g<-c(2,3,5,7,9,11)
 base::plot(days,bodymass_g)
+
+# inspecting the code for a built-in function (from a core package)
+a<-c(1,2,3)
+b<-10
+base::append(a,b)
+?base::append()
+base::append
 
 # a list is a collection of different objects, which can be of different types and lengths
 # such as text, numbers or boolean variables, create a simple list:
