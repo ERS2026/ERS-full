@@ -72,6 +72,9 @@ source(here::here("scripts", "01-setup.R"))
 # this is important when you collaborate on the project
 system2("git",c("-C", here::here(), "pull"))
 
+# show which package namespaces are loaded to memory with library()
+search()
+
 
 # 03 the here package --------------------------------------------
 # to get the root folder of your project
@@ -83,9 +86,6 @@ system2("git",c("-C", here::here(), "pull"))
 
 # show the root folder of your git-enabled project
 here::here()
-
-# and show which package namespaces are loaded to memory with library()
-search()
 
 
 # 04 assignments, calculations, vectors, lists dataframes---------
