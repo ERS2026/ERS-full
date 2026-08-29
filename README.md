@@ -1,2 +1,2 @@
-# 2025-ERS/intro-to-R-template
-Starting scripts for learning R in the Ecological Research Skills course - 2025
+# ERS2026/ERS-full
+Scripts for learning R in the Ecological Research Skills course - 2026
