@@ -38,18 +38,14 @@ search()
 # 05 Method 2 - read data from a local file ----------------
 # If you want to read a file from a drive from your computer, 
 # it is a good idea to set a working directory to point where your different datasets are located
-setwd("C:/Users/holff/data") # note that the slashes have to be forward, not backward
-data2<-readr::read_csv("EVI2001_2023.csv")
-print(data2)
-# This reads the file EVI2001_2023.csv from the folder data on my C drive.
-# The problem however, is that this script likely does not work on your computer. 
-# This is because you do not have this file and folder on your local computer. 
-# I can of course send you the data, but then if I change the I should send them again. 
-# But this leads to different versions of the same file to exist in multiple places, which is not good data
-# management. You will not be shure what the most up-to-dat version of the file is. 
-# So in collaborative projects it is much better to read data from an online data source, 
-# making sure that there is only one file that all the collaborators read to get the data.\
-
+EVI2001_2023 <- readr::read_csv(
+  here::here("data", "EVI2001_2023.csv")
+)
+print(EVI2001_2023)
+# This reads the file EVI2001_2023.csv from the folder data on my local folder  
+# although it is synchronized through git/github, that is only possible for small files
+# and also it lacks all kind of metadata, it is a loose file, not a database
+# also it is not a good idea to keep data outside the git folder, as then we are not sure we work on the same data
 
 # 06 Method 3 - read data from an online database -------------------------------
 # This is the hihgly recommended choice of these three methods. 
