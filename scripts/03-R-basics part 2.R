@@ -134,16 +134,18 @@ date_var <- lubridate::ymd_hms("2023-12-18 14:30:00",tz="Africa/Nairobi")
 date_var
 
 
-# 07 statistical functions ----------------
+# 07 Statistical functions ----------------
 # R has many built-in functions, for example the sqrt() function to calculate the square root of a number
-
 base::sqrt(16) # calculate the square root of 16
-
 # Also many stastistical analysis are implemented as functions
 # then the function returns the result of the analysis, often as a list
-
+# A statistical function applies a particular statistical analysis to data, such a linear regression
+# inspect the object produced by the lm function that calculates a linear regression
+x<-c(1,2,3,4,5)
+y<-c(3,5,4,8,11)
 model1<-lm(y~x) # linear model of y as a function of x
-print(model1) # print the result of analysis, or the contents of a the object model1
+# print the output, which is a named list
+str(model1) 
 class(model1)
 print(unclass(model1))
 model1$coefficients # print the coefficients of the model (slope and intercept)
@@ -163,70 +165,22 @@ circle_area <- function(radius) { # define a function called circle_area that ta
 # use the function to calculate the area of a circle with radius 5
 circle_area(5) # call the function circle_area with the argument 5
 
-# a more complex function that calculates some statistics for a numeric vector x
-# specify is that the default value for the argument na.rm is TRUE, so that it removes NA values by default
-# but you can also set it to FALSE if you want to keep NA values in the calculation
-# Define the function
-my_stats <- function(x, na.rm = TRUE) {
-  # Check if input is numeric
-  if (!is.numeric(x)) {
-    stop("Input must be numeric!")
-  }
-  
-  # Remove NA values if requested
-  if (na.rm) {
-    x <- x[!is.na(x)]
-  }
-  
-  # Compute statistics
-  n <- base::length(x)            # not that functions can use other functions from other libraries
-  mean_val <- base::mean(x)
-  median_val <- stats::median(x)
-  sd_val <- stats::sd(x)
-  
-  
-  # Return a list with named components
-  result <- list(
-    n = n,
-    mean = mean_val,
-    median = median_val,
-    sd = sd_val,
-    min = range_val[1],
-    max = range_val[2]
-  )
-  
-  return(result)
-}
-# How to Use It
-# Create a numeric vector with some NA values
-data <- c(2, 5, 7, 8, NA, 10)
-my_stats(data)
-# You can also use the function with the na.rm argument set to FALSE
-my_stats(data, na.rm = FALSE) # this will keep the NA values in the calculation
-# If you try to use the function with a non-numeric vector, it will give an
-# error message
-my_stats(c("a", "b", "c")) # this will give an error message because the input is not numeric
 
-# -------------------------- 07 Objects and methods  ----------------
-# In R, everything (a number, vector, output of an analysis) is an object, and objects can have different classes
-# You can check the class of an object using the class() function
-num_var <- 3.14
-class(num_var) # print the class of num_var
-x<-c(1,2,3,4,5)
-class(x) 
-y<-c(2,4,1,6,5)
-class(y)
-data<-base::data.frame(x,y)
-print(data)
-class(data)
-linear_model<-stats::lm(y~x)
-class(linear_model)
-
+#  08 Methods of a function  ----------------
+# In R, a method is a specific version of a function that is used for a particular class of object.
 # Functions can have different methods, which are specific implementations of the function depending on the of class of the object that they are applied to. 
 # For example, the summary() function has different methods for different classes of objects
-summary(x) # summary method for numeric objects, applies the summary.default() method
-summary(data) # summary method for data.frame objects, applies the summary.data.frame() method
-summary(linear_model) # summary method for lm objects, applies the summary.lm() method
-# You can see the different methods for a function using the methods() function
+# apply the summary function to a vector object of class "numeric"
+vector<-c(1,2,3)
+# apply the summary function to an object of class "lm" the model1 object you calculated before
+summary(model1) 
+# apply the summary function to the model1 linear regression
+summary(model1)
+
+# You can see the different methods of a function using the methods() function on that function
 methods("summary") # print the methods for the summary function
-methods("plot") # print the methods for the plot function
+# so summary recognizes the class of the object, and then applies the appropriate method
+# so the above is equivalent to 
+summary.default(vector)
+summary.lm(model1)
+

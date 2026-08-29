@@ -96,6 +96,7 @@ base::sqrt(9)
 # but for core packages as base (that come with the default R installation)
 # you typicallly do not specify from which package the function comes
 
+# Objects: anything stored in R in memory that you can refer to by a name.
 # create objects through the assignments operator <- (variables)
 a<-1
 b<-3
@@ -122,8 +123,8 @@ base::append(a,b)
 ?base::append()
 base::append
 
-# a list is a collection of different objects, which can be of different types and lengths
-# such as text, numbers or boolean variables, create a simple list:
+# a named list is a collection of different objects, which can be of different types and lengths
+# such as text, numbers or boolean variables, create a named list with four elements
 elephant_properties <- list(
   name = "Elephant",
   weight = 5400,
@@ -135,7 +136,7 @@ elephant_properties
 elephant_properties$weight
 
 
-# a dataframe is a special type of list with rows and columns (variables)
+# a dataframe is a special type of named list with rows and columns (variables)
 students <- data.frame(
   name = c("Alex", "Sam", "Robin"),
   age = c(21, 23, 20)
