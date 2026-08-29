@@ -126,11 +126,12 @@ base::plot(days,bodymass_g)
 # ----------------------------------------------------------------
 
 # show help on the lubridate package
-?lubridate
+help(package=lubridate)
+
 # list the functions in the lubridate package
 ls(package:lubridate)
 # get help on the function floor_date from lubridate
-?lubridate::floor_date
+help("floor_date", package = "lubridate")
 
 
 # calculate the date of the monday of the same week of a date
