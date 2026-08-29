@@ -38,33 +38,31 @@
 # (same versions of the packages) as you are using to develop the scripts, where these version numbers are read
 # from the renv.lock file. If certain packages are not installed yet on that specific computer, they will be
 # installed.
-
 # This ensures that your project uses the exact same package versions and dependencies that were initially 
 # recorded, making it easier to reproduce analyses and maintain consistency across different environments or
 # collaborators. The version of packages in the library can be update by yourself or your collaborator, but then
 # then renv::restore() causes all to use the same versions of all libraries. Be carefull with this, only update
 # your library when really nescessary (eg a package contains an error or missing functionality). Otherwise just
 # stick to the version that you used when you started the project.
+# You do not need to do this renv::init() now, because you have cloned an existing project. 
 
-# Make sure that before you use renv::restore(), you have rtools installed. This is a set of tools that are 
+# Make sure that before you use renv::restore() on a Windows machine, you have RTools installed. This is a set of tools that are 
 # needed to compile some packages from source. Install the RTools version that matches your R version. 
 # So if you have R version 4.6.x you need RTools45 (it works with R 4.5 and R 4.6 )
 # You can download RTools from the [CRAN website at 
 # this link: https://cran.r-project.org/bin/windows/Rtools
 # and choose the Rtools installer, using default installation settings.
-# Note that this works different on a Mac, see https://mac.r-project.org/tools/
+# Note that this works different on a Mac, there you do not work with RTools, but with 
+# Appl's developer toolchain instead
+# see https://mac.r-project.org/tools/
 
 
 #--------------------------01 Set up the environment ----
+# always include this section 01 in your other scripts!
 # First pull the latest changes to this repo from the Github repository 
 system2("git",c("-C",here::here(),"pull"))
-
 # run the Setup script for user-defined functions 
 source(here::here("scripts", "01-setup.R"))
-
 # authenticate Google Sheets access
 gsheets_auth() # authenticate google sheets access, this will open a browser window for authentication if not already authenticated, note this function is defined in script 01-setup.r
-
 # load libraries specific for this script (that are not in 01-setup.R)
-
-# This  section --- 01 Setup ----you always want to include at the start of your script!
