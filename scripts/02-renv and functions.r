@@ -60,8 +60,9 @@
 # ----------------------------------------------------------------
 
 # 02 Set up your environment -------------------------------------
-# run the setup script
+# run the setup script, authenticate google etc
 source(here::here("scripts", "01-setup.R"))
+# ----------------------------------------------------------------
 
 # 03 Simple calculations -----------------------------------------
 # assigning variables, using functions from a package
