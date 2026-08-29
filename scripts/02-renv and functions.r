@@ -4,14 +4,16 @@
 # date: "2025-08-22"
 # project: ERS2026
 
-# ---------- Collapsing or expanding sections of your script -----
-# When a line in your script starts with #---- (or more -) then you can collapse and expand it, 
+# Collapsing or expanding sections of your script 
+# When a line in your script starts ---- (4 or more -) then you can collapse and expand it, 
 # try this by clicking on the small triangle next to the line number 8 above. 
 # Combine this by numbering the sections of your script, and always make section 01 the Header
 # This allows you to show an outline of your script, in the R Studio menu use /Code/Show document outline 
 # and allows quick naviations through your script
+# in the Explorer panel on the left in Positron, you can view the outline of your script that uses the headers
+# while also showing defined variables and functions in each section of your script
 
-#------------Using renv for making R predictable ----
+# Using renv for making R predictable 
 # A major strength, but also potential challenge of R is that the software changes all the time. 
 # All functionality # of R comes from packages, and these are improved, expanded, updated all the time. 
 # Say that you develop a set of scripts in R now, for example to analyse the data in your master project,
@@ -57,14 +59,11 @@
 # see https://mac.r-project.org/tools/
 # ----------------------------------------------------------------
 
-
-# 01 Set up the environment ------------------------------------------------------------
+# 02 Set up your environment -------------------------------------
 # run the setup script
 source(here::here("scripts", "01-setup.R"))
-# authenticate Google Sheets access
-gsheets_auth() # authenticate google sheets access
 
-# 02 Simple calculations -----------------------------------------
+# 03 Simple calculations -----------------------------------------
 # assigning variables, using functions from a package
 # ----------------------------------------------------------------
 1+3
