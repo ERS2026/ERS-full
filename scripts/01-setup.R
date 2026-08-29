@@ -86,7 +86,9 @@ suppressPackageStartupMessages({
 })
 
 
-# 06 read_gsdb helper function definition ---------------------------------
+# 06 helper function definitions ------------------------------------
+
+#--------------read_gsdb function 
 # This function reads specific sheets from a Google Sheets database or the whole database
 # Usage examples:
 #  
@@ -105,7 +107,6 @@ suppressPackageStartupMessages({
 #                  Transects    = ~ Region == "Loita",
 #                  Observations = ~ cover > 0))
 # --------------------------------------------------------------------
-
 read_gsdb <- function(database, sheets = NULL, separate = FALSE, verbose = TRUE) {
   if (is.null(sheets)) {
     sheets <- googlesheets4::sheet_names(database)
@@ -148,7 +149,9 @@ read_gsdb <- function(database, sheets = NULL, separate = FALSE, verbose = TRUE)
   }
 }
 
-# 07 gsheets_auth helper function definition ------------------------------------
+
+# -------------------------------------------------------------------------------
+# gsheets_auth() function
 # Function to authenticate you with Google Sheets (googlesheets4)  
 # Usage examples: 
 #
@@ -161,7 +164,6 @@ read_gsdb <- function(database, sheets = NULL, separate = FALSE, verbose = TRUE)
 # a token is stored that authenticates you next time
 # -------------------------------------------------------------------------------
 suppressPackageStartupMessages(library(googlesheets4))
-
 gsheets_auth <- function(
     mode = c("auto", "public", "user", "service"),
     email = Sys.getenv("GS_EMAIL", ""),                     # for user OAuth
