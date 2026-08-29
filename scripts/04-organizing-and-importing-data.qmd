@@ -13,7 +13,7 @@ editor_options:
 How to import data into R from different sources, including local files and online databases.
 You will learn to not use local data files, but instead read the data from an online Google Sheets database
 
-## 01 Setup your environment
+# 01 Setup your environment
 
 Run the common setup script and synchronize the local project with
 GitHub.
@@ -33,7 +33,7 @@ search()
 gsheets_auth()
 ```
 
-## 02 Different ways to enter data
+# 02 Different ways to enter data
 
 Data can be imported in different ways in R:
 
@@ -47,12 +47,12 @@ data, we prefer the readr::read_csv() function, as it reads data
 directly into a tibble instead of a dataframe. A tibble is more
 compact when printed and shows the variable types directly.
 
-## 03 Method 1 - enter data directly in your script
+# 03 Method 1 - enter data directly in your script
 
 This is only practical for small datasets, but not for large datasets.
 We did this already in the previous scripts.
 
-## 04 Method 2 - read data from a local file
+# 04 Method 2 - read data from a local file
 
 If you want to read a file from a drive from your computer, it is a
 good idea to set a working directory to point where your different
@@ -72,7 +72,7 @@ is a loose file, not a database. Also it is not a good idea to keep
 data outside the git folder, as then we are not sure we work on the
 same data.
 
-## 05 Method 3 - read data from an online database
+# 05 Method 3 - read data from an online database
 
 This is the highly recommended choice of these three methods. In this
 case the data are in one online database, in our course mostly a
@@ -99,7 +99,7 @@ dataframe that you read in R the same name as the online table
 computers can read the same datafile. That is what you want in a
 collaborative project.
 
-## 06 Introduction example online database
+# 06 Introduction example online database
 
 We explore this with this example database - open in your browser
 with crtl + click:
@@ -133,7 +133,7 @@ contains the following tables (sheets):
 -   FactPlotVegetation: the data on the vegetation in each plot of
     each transect
 
-## 08 Star schema database organization
+# 08 Star schema database organization
 
 This example database is organized as a Star Schema database, which is
 explained in detail in: 
@@ -151,7 +151,7 @@ The Dim tables are the points of the star, and the Fact tables are at
 the center of the star. The Dim tables are linked to the Fact tables
 using the unique ID variable in each Dim table.
 
-## 09 MET tables: metadata
+# 09 MET tables: metadata
 
 Met tables are a special type of table that contain meta-data, which
 is data about the data in your database. Met tables are not part of
@@ -190,7 +190,7 @@ The following Met tables are recommended to use in your database:
     (numeric, character, factor), and the Dim table it is linked to.
     This is useful to document the variables in your database.
 
-## 10 DIM tables: dimensions
+# 10 Dim tables: dimensions
 
 Dim tables contain information on lists of objects and subjects that
 you study with their properties. Dim tables are the points of the
@@ -213,7 +213,7 @@ Fact tables. For example, the DimSpecies table has a unique ID
 variable SpeciesID that is used to link to the FactSectionAnimals
 table.
 
-## 11 FACT tables: data
+# 11 Fact tables: data
 
 Fact tables are the data that you collect on the objects or subjects
 listed in your Dim tables. Fact tables are at the center of the star,
@@ -222,12 +222,12 @@ Dim table. In this example database, the following Fact tables are
 used:
 
 -   FactSectionAnimals: the data on the number of animals observed in
-    each section of each transect, with the SpeciesID linking to the
-    DimSpecies table and the SectionID linking to the DimSection
-    table.
+    each section of each transect, with the SpCode2 variable linking
+    to the DimSpecies table and the Section_ID variable linking to the
+    DimSection table.
 -   FactSectionVegetation: the data on the vegetation in each section
-    of each transect, with the SectionID linking to the DimSection
-    table.
+    of each transect, with the Section_ID variable linking to the
+    DimSection table.
 -   FactPlotVegetation: the data on the vegetation in each plot of
     each transect, with the PlotID linking to the DimPlot table.
 
@@ -235,7 +235,7 @@ Each Fact table has several ID variables that link to the Dim tables,
 characterising the observation as which species is observed, at which
 transect, etc.
 
-## 12 Reading data from an online database
+# 12 Reading data from an online database
 
 We will now read in an entire database of transect data with multiple
 tables, including metadata. This uses the function read_gsdb that you
@@ -250,7 +250,7 @@ names(transdat)
 transdat$FactSectionAnimals
 ```
 
-## 13 Using ggplot for plotting
+# 13 Using ggplot for plotting
 
 ggplot2 is a powerful library allowing all kind of scientific
 visualisations/plots.
@@ -275,22 +275,28 @@ table to get the full species names.
 transdat$DimSpecies
 ```
 
-## 14 joining data from different tables
+# 14 joining data from different tables
 
-Join multiple tables using a sequential left_join with the appropriate
-key variables linking the tables. Always put the table with the most rows first, so
-that you do not lose any rows.
+`left_join()` adds columns from a second table while retaining every row
+from the table on the left. Start with `FactSectionAnimals`, because it
+contains the observations to retain, then join the lookup tables using
+their ID variables.
+
+Before joining, check that every key in a lookup table occurs at most
+once. Duplicate keys can create extra rows by matching one observation
+to multiple records. In this example, each `SpCode2` used in
+`FactSectionAnimals` has one matching species record.
 
 ```{r}
-alldata<-dplyr::left_join(transdat$FactSectionAnimals,transdat$DimSpecies,by="SpCode2") |>
-            dplyr::left_join(transdat$DimSection, by="Section_ID") |>
-            dplyr::left_join(transdat$DimTransect,by="Transect_ID")
-    
-# check the 'environment' tab in R Studio topright in your screen that you are adding variables not rows!
-# inspect the data by printing the first few lines
+alldata <- transdat$FactSectionAnimals |>
+  dplyr::left_join(transdat$DimSpecies, by = "SpCode2") |>
+  dplyr::left_join(transdat$DimSection, by = "Section_ID") |>
+  dplyr::left_join(transdat$DimTransect, by = "Transect_ID")
 
+# The number of rows should equal the number of animal observations.
+nrow(alldata)
 names(alldata)
-``` 
+```
 
 ## plot the combined data 
 now make the boxplot again, but now with the full species names, 
