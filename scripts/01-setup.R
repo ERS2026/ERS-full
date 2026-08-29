@@ -45,7 +45,10 @@ if (.Platform$OS.type == "windows") {
   message("Not running on Windows; Rtools is not applicable.")
 }
 
-# 04 Restore project package environment---------------------------
+# 04 Install frequently used packages ---------------------------
+# put packages here that you use  frequently in several scripts of your project
+# note that tidyverse is not a single package, but a metapackage 
+# that loads a family of related packages: ggplot, dplyr etc, see https://tidyverse.org/
 # -----------------------------------------------------------------
 
 packages <- c(
@@ -54,7 +57,7 @@ packages <- c(
   "pkgbuild",
   "googlesheets4",
   "purrr",
-  "tidyverse",  # tidyverse is a metapackage loading a family of related packages: ggplot, dplyr etc
+  "tidyverse",  
   "lubridate",
   "patchwork",
   "httpuv"
@@ -74,7 +77,7 @@ renv::restore()
 
 
 # 05 Load frequently used libraries ----------------------------------
-# Put libraries here that you frequntly us in different scripts
+# Put libraries here that you frequntly use in different scripts
 # --------------------------------------------------------------------
 
 suppressPackageStartupMessages({
