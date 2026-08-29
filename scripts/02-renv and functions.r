@@ -64,12 +64,29 @@
 source(here::here("scripts", "01-setup.R"))
 # ----------------------------------------------------------------
 
-# 03 Simple calculations -----------------------------------------
-# assigning variables, using functions from a package
+# 03 the here package --------------------------------------------
+# to get the root folder of your project
+# use this instead of absolute file locations
+# for example do NOT use 
+# source("c:\github\ERS2026\01-setup.R"))
+# as this will cause problems on collaborating on your project
+# ----------------------------------------------------------------
+
+# show the root folder of your git-enabled project
+here::here()
+
+
+# 04 Simple calculations -----------------------------------------
+# assigning variables, using functions from a core package
 # ----------------------------------------------------------------
 1+3
 # use built-in function from a package
+sqrt(9)
+# the full specification would be 
 base::sqrt(9)
+# but for core packages as base (that come with the default R installation)
+# you typicallly do not specify from which package the function comes
+
 # assign variables
 a<-1
 b<-3
@@ -77,10 +94,16 @@ a+b
 c<-a+b
 c
 base::sum(a,b) 
+c<-sum(a,b)
+c
 # check the class of a variable
 class(a)
-#  use built-in function from another package than base
+
+# 05 when using built-in functions from non-core packages 
+# then specify ALWAYS as package::function(parameter1, parameter2)
+# because the same function may exist in different packages
 lubridate::floor_date(lubridate::dmy("29-Aug-2026"), 
                                       unit = "week",
                                       week_start = 1)
 
+# writing your own functions 
