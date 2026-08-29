@@ -4,4 +4,10 @@
 .Ruserdata
 /figures
 
-/.quarto/
+# Quarto rendered output
+*.html
+*_files/
+
+# Quarto cache
+.quarto/
+*_cache/
