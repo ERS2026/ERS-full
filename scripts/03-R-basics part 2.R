@@ -1,8 +1,8 @@
-# --------------------------HEADER ----------------
-# title: "02-R-basics.R"
-# author: "Han Olff"
-# date: "2025-8-22"
-# description: "Some basics of R"
+# 01 Header ---------------------------------------------------------------------
+# title: 03 R Basics part 2
+# author: Han Olff
+# date: 2026-08-29
+# project: ERS2026
 
 
 # -------------------------- 01 SETUP ----------------
