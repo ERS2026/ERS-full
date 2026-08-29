@@ -19,6 +19,8 @@ source(here::here("scripts", "01-setup.R"))
 # This is especially important when collaborating on the same project.
 system2("git",c("-C", here::here(), "pull"))
 
+# show which package namespaces are loaded to memory with library()
+search()
 
 # 03 Variables, vectors, and operators ------------------------------------------
 # Variables are named objects used to store values.
