@@ -25,7 +25,7 @@ library(tidyverse) # load the tidyverse package
 
 ```
 
-### 02 Introduction to the data
+## 02 Introduction to the data
 
 We will work with an online database of the Schiermonnikoog transect
 study, that you will collect additional data for next week in the field.
@@ -36,7 +36,7 @@ will work with the table
 See the documentation of the different variables in the table
 [MetVariables](https://docs.google.com/spreadsheets/d/1E1vUWAHhse7fhjBf94Kiog3Rsj7IkMuFtP-BTQX2oI8/edit?gid=1290622213#gid=1290622213)
 
-### 03 Read the datafile from the Google sheets database
+## 03 Read the datafile from the Google sheets database
 
 To read the data in R, you first need to know the published csv link of
 the FactCockles table. In the database, you can find this link in the

@@ -10,7 +10,7 @@
 # 02 Setup your environment -----------------------------------------------------
 # Run the common setup script and synchronize the local project with GitHub.
 # ------------------------------------------------------------------------------
-
+```{r}
 # Run the setup script containing package restoration, helper functions, etc.
 source(here::here("scripts", "01-setup.R"))
 
@@ -24,6 +24,7 @@ search()
 # authenticate your @student.rug.nl google account
 gsheets_auth()
 
+```
 
 # 03 Different ways to enter data ----------------
 # Data can be imported in different ways in R:\

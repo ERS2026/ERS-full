@@ -56,6 +56,7 @@ print(DimDates)
 
 # join all tables using a left_join with SpCode2 as the key variable linking the tables 
 # always put the table with the most rows first, so that you do not lose any rows
+# this is called a sequential join, where you join two tables at a time, and then join the result with the next table
 AllData<-dplyr::left_join(FactPeckObs,DimSpecies,by="Species_ID") |>
          dplyr::left_join(DimSections, by="Section_ID") |>
          dplyr::left_join(DimDates,by="Date_ID") 
