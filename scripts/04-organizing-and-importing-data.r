@@ -1,4 +1,4 @@
-# --------------------------HEADER ----------------
+# 01 Header ------------------------------------------------------
 # title: "03-organizing and importing data.R"
 # author: "Han Olff"
 # date: "2025-8-22"
@@ -7,19 +7,22 @@
 # output: "No output files, but the script produces some plots"
 
 
-# --------------------------01 Set up the environment ----------------
-# This script uses the renv package to manage the R environment and the tidyverse package for data manipulation and visualization.
-# Make sure that you have the renv package installed. If not, install it using install.packages("renv")
-if (!requireNamespace("renv", quietly = TRUE)) {install.packages("renv")}
-# Load the renv package
-library(renv)
-# restore the library versions from the lock file
-renv::restore() 
-# Load the libraries that you will use in this script. Only load the libraries that you will actually use!
-library(tidyverse) # load the tidyverse libraries, including readr and ggplot2
+# 02 Setup your environment -----------------------------------------------------
+# Run the common setup script and synchronize the local project with GitHub.
+# ------------------------------------------------------------------------------
+
+# Run the setup script containing package restoration, helper functions, etc.
+source(here::here("scripts", "01-setup.R"))
+
+# Pull changes from the online repository into this local project folder.
+# This is especially important when collaborating on the same project.
+system2("git",c("-C", here::here(), "pull"))
+
+# show which package namespaces are loaded to memory with library()
+search()
 
 
-# --------------------------02 Different ways to enter data ----------------
+# 03 Different ways to enter data ----------------
 # Data can be imported in different ways in R:\
 # 1. entering data directly in your script\
 # 2. reading data from a .csv or .xlsx file from your local computer or online source\
@@ -28,20 +31,11 @@ library(tidyverse) # load the tidyverse libraries, including readr and ggplot2
 # function, as it reads data directly into a tibble instead of a dataframe. A tibble is more compact when printed # and shows the variable types directly.
 
 
-# --------------------------03 Method 1 - enter data directly in your script  ----------------
+# 04 Method 1 - enter data directly in your script  ----------------
 # This is only practical for small datasets, but not for large datasets.
-x<-c(1,2,3,4)
-y<-as.integer(c(1,4,3,5))
-z<-c("A","B","C","D")
-# combine the two vectors into a data frame using data.frame
-data1a<-data.frame(x,y,z)
-print(data1a)
-# combine the two vectors into a tibble using tibble, note the subblte different, variables types are shown, and 
-data1b<-dplyr::tibble(x,y,z)
-print(data1b)
+# we did this already in the previous scripts 
 
-
-# --------------------------04 Method 2 - read data from a local file ----------------
+# 05 Method 2 - read data from a local file ----------------
 # If you want to read a file from a drive from your computer, 
 # it is a good idea to set a working directory to point where your different datasets are located
 setwd("C:/Users/holff/data") # note that the slashes have to be forward, not backward
@@ -57,7 +51,7 @@ print(data2)
 # making sure that there is only one file that all the collaborators read to get the data.\
 
 
-# --------------------------05 Method 3 - read data from an online database 
+# 06 Method 3 - read data from an online database -------------------------------
 # This is the hihgly recommended choice of these three methods. 
 # in this case the data are in one online database, in our course mostly a Google Sheets database.
 # This means that there is only one version of the data, and all collaborators read the same data.
@@ -75,7 +69,7 @@ print(data2)
 # In this way, data can be read on any computer, and multiple computers can read the same datafile.
 # That is what you want in a collaborative project.
 
-# --------------------------06 Introduction of the example  online database ----------------
+# 07 Introduction example online database ----------------
 # We explore this  with this example database  (explore by copy-paste the link below in your browser):
 # https://docs.google.com/spreadsheets/d/1m-liu8omZMewqz_YP9j_YUmQ0zwATl3z4aRLnZFnfWc/edit?usp=sharing
 
@@ -95,7 +89,7 @@ print(data2)
 # - FactSectionVegetation: the data on the vegetation in each section of each transect
 # - FactPlotVegetation: the data on the vegetation in each plot of each transect
 
-# --------------------------07 Star schema database organization ----------------
+# 08 Star schema database organization ----------------
 # This example database is organized as a Star Schema database, which is explained in detail in [this document](https://docs.google.com/document/d/1UbUMVFfF4muRqt_YOT73NT7xt-vsoLHs0xNza_Le56U/edit?usp=sharing).
 # This is a particular type of organisation of data into a relational database using Dim and Fact tables.
 # In addition I also recommend Met tables. These **Met tables** contain documents, 'data about data'.
@@ -104,7 +98,7 @@ print(data2)
 # The Dim tables are the points of the star, and the Fact tables are at the center of the star.
 # The Dim tables are linked to the Fact tables using the unique ID variable in each Dim table.
 
-# --------------------------08 MET tables: metadata ----------------
+# 09 MET tables: metadata ----------------
 # Met tables are a special type of table that contain meta-data, which is data about the data in your database.
 # Met tables are not part of the Star Schema, but they are highly recommended to use in your database.
 # Met tables are used to document the study design, the variables, and the data collection process.
@@ -116,7 +110,7 @@ print(data2)
 # - MetTables: the list of tables (sheets) in your database, with for each table a short contents description and a CSV link to read the table in an R script. This link for each table you produce from the menu File /Share /Publish to web and then selecting the table name (instead of entire document) and Comma separated values (instead of Web page). This then shows the link. If you put this link in your browser, it gives a download as a csv file. But you can also use this link directly in R to read the data using readr::read_csv(link). So this avoids the use of intermediary data files. Anyone with a script containing that link can read the data. Because such links are impossible to guess this is still sufficiently safe for regular ecological data. If you however want additional security, you can also set up access to tables using the google_drive package in R, allowing user authentication.
 # - MetVariables: the list of variables in your database, with for each variable a short description, the unit, the type of variable (numeric, character, factor), and the Dim table it is linked to. This is useful to document the variables in your database. 
 
-# --------------------------09 DIM tables: dimensions ----------------
+# 10 DIM tables: dimensions ----------------
 # Dim tables contain information on lists of objects and subjects that you study with their properties.
 # Dim tables are the points of the star, and the Fact tables are at the center of the star.
 # The Dim tables are linked to the Fact tables using the unique ID variable in each Dim table.
@@ -127,7 +121,8 @@ print(data2)
 # - DimSection: the list of sections in the study, with their properties such as length, habitat type, etc.
 # Each Dim table has a unique ID variable that is used to link to the Fact tables.
 # For example, the DimSpecies table has a unique ID variable SpeciesID that is used to link to the FactSectionAnimals table.
-# --------------------------10 FACT tables: data ----------------
+
+# 11 FACT tables: data ----------------
 # Fact tables are the data that you collect on the objects or subjects listed in your Dim tables.
 # Fact tables are at the center of the star, and are linked to the Dim tables using the unique ID variable in each Dim table.
 # In this example database, the following Fact tables are used:
@@ -137,7 +132,7 @@ print(data2)
 # Each Fact table has several ID variables that  to link to the Dim tables, characterising the observation 
 # as which species is observed, at which transect, etc
 
-# --------------------------11 Example of reading data from a Google Sheets database ----------------
+# 12 Reading data from an online database ----------------
 # We will now read in one of the Fact tables from the example database
 
 # first read MetTables as this contains the links to read the tables
@@ -163,7 +158,8 @@ FactSectionAnimals
 print(FactSectionAnimals)
 names(FactSectionAnimals)
 
-# --------------------------12 Example of plotting data ----------------
+# 13 Using ggplot for plotting  ----------------
+# ggplot2 is a powerfull library allowing all kind of scientific visualisations/plots
 ggplot2::ggplot(data=FactSectionAnimals, 
                 mapping=aes(x=SpCode2,y=CountLeft)) +
   geom_boxplot()
