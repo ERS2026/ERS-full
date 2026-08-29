@@ -9,11 +9,15 @@
 
 # 02 Setup your environment -------------------------------------
 # run the setup script, containing restore packages, helper functions, etc
-source(here::here("scripts", "01-setup.R"))
-# pull the changes in the online repository to this local folder
-# important when you collaborate on the project
-system2("git",c("-C", here::here(), "pull"))
 # ----------------------------------------------------------------
+
+# run the setup script
+source(here::here("scripts", "01-setup.R"))
+
+# pull the changes in the online repository to this local folder
+# this is important when you collaborate on the project
+system2("git",c("-C", here::here(), "pull"))
+
 
 
 
