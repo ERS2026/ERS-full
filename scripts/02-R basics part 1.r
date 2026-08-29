@@ -1,8 +1,10 @@
-# 01 Header ---------------------------------------------------------------------
-# title: "Using the renv library for making R predictable"
-# author: "Han Olff"
-# date: "2025-08-22"
+# 01 Header --------------------------------------------------------
+# title: 02 Setup your environment
+# author: Han Olff
+# date: 2026-08-29
 # project: ERS2026
+# purpose: Explain the here package, variable assignments and functions
+# ----------------------------------------------------------------
 
 # Collapsing or expanding sections of your script 
 # When a line in your script starts ---- (4 or more -) then you can collapse and expand it, 
