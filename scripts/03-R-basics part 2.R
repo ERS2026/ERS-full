@@ -23,13 +23,13 @@ system2("git",c("-C", here::here(), "pull"))
 
 # 03 Variables, vectors, operators  ----------------
 # Variables are used to store values, for example the number 3.14 in a variable called class_size (number of students in this class)
-class_size <- 28 # assign the value 28 to the variable class_size
+class_size <- 32 # assign the value 28 to the variable class_size
 print(class_size) # print the value of the variable class_size
 # You can also use the equals sign = for assignment, but the arrow <- is better in R
 
 # operators for logical comparison
-class_size == 30 # is the value of class_size equal to 30? This will return TRUE or FALSE
-class_size != 30 # is the value of class_size not equal to 30?
+class_size == 32 # is the value of class_size equal to 30? This will return TRUE or FALSE
+class_size != 35 # is the value of class_size not equal to 30?
 class_size > 20 # is the value of class_size greater than 20?
 class_size < 20 # is the value of class_size less than 20?
 class_size >= 28 # is the value of class_size greater than or equal to 28?
@@ -60,23 +60,11 @@ print(numeric_vector) # print the value of numeric_vector
 numeric_vector*2
 class(numeric_vector)
 
-# 04 Lists, data frames and tibbles ----------------
-# a list is a collection of objects, which can be of different types and lengths
-# such as text, numbers or boolean variables
-# Create a simple list
-my_list <- list(
-  name = "Elephant",
-  weight = 5400,
-  is_endangered = TRUE,
-  colors = c("gray", "white")
-)
-my_list
-# in practice, we typically read a dataframe from a file, not create it ourselves in a script like this
-
-my_list$name # print the value of the name element in my_list
-my_list$weight # print the value of the weight element in my_list
+# 04 data frames and tibbles ----------------
 
 # A data frame is a table-like structure, where each column can be of a different type (numeric, character, logical)
+# a dataframe is a list where the different elements (=variables) have the same number of objects, that become
+# the rows of the dataframe
 # Create a simple data frame
 data_herbivores <- data.frame(
   id = c(1, 2, 3),
