@@ -3,20 +3,16 @@
 # author: Han Olff
 # date: 2026-08-29
 # project: ERS2026
+# purpose: Explain variables, vectors, operators, lists, dataframes, tibbles
+# ----------------------------------------------------------------
 
 
-# -------------------------- 01 SETUP ----------------
-# clear everything in working memory 
-rm(list = ls())
-# Make sure that you have the renv package installed. If not, install it using install.packages("renv")
-if (!requireNamespace("renv", quietly = TRUE)) {install.packages("renv")}
-# Load the renv package
-library(renv)
-# restore the libraries in the right verions from the lock file 
-renv::restore() 
-# Load the libraries that you will use in this script. Only load the libraries that you will actually use!
-library(tidyverse) # load the tidyverse libraries, including readr and ggplot2
-library(lubridate) # for working with dates
+# 02 Setup your environment -------------------------------------
+# run the setup script, containing restore packages, helper functions, etc
+source(here::here("scripts", "01-setup.R"))
+# ----------------------------------------------------------------
+
+
 
 # -------------------------- 02 Variables, vectors, operators  ----------------
 # Variables are used to store values, for example the number 3.14 in a variable called class_size (number of students in this class)
