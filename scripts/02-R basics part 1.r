@@ -86,7 +86,7 @@ here::here()
 
 
 # 04 Simple calculations and vectors-------------------------------
-# assigning variables, using functions from a core package
+# assigning creating objects, using functions from a core package
 # ----------------------------------------------------------------
 1+3
 # use built-in function from a package
@@ -103,7 +103,9 @@ base::append(a,b)
 ?base::append()
 base::append
 
-# assigning and printing (show the contents) of variables
+# create and print simple objects, as vectors
+
+# create vectors through the assignments operator <- (variables)
 a<-1
 b<-3
 print(a+b)
@@ -115,10 +117,17 @@ print(c)
 # check the class of a variable
 class(a)
 
-# defining vectors
+# objects can hold more than one value: create vectors 
 days<-c(1,2,3,4,5,6)
 bodymass_g<-c(2,3,5,7,9,11)
 base::plot(days,bodymass_g)
+
+# create even more complex objects
+students <- data.frame(
+  name = c("Alex", "Sam", "Robin"),
+  age = c(21, 23, 20)
+)
+print(students)
 
 # 05 using non-core package functions ---------------------------
 # then specify ALWAYS as package::function(parameter1, parameter2)

@@ -21,19 +21,20 @@ system2("git",c("-C", here::here(), "pull"))
 
 
 
-# -------------------------- 02 Variables, vectors, operators  ----------------
+# 03 Variables, vectors, operators  ----------------
 # Variables are used to store values, for example the number 3.14 in a variable called class_size (number of students in this class)
 class_size <- 28 # assign the value 28 to the variable class_size
 print(class_size) # print the value of the variable class_size
-
 # You can also use the equals sign = for assignment, but the arrow <- is better in R
-# logical comparison
+
+# operators for logical comparison
 class_size == 30 # is the value of class_size equal to 30? This will return TRUE or FALSE
 class_size != 30 # is the value of class_size not equal to 30?
 class_size > 20 # is the value of class_size greater than 20?
 class_size < 20 # is the value of class_size less than 20?
 class_size >= 28 # is the value of class_size greater than or equal to 28?
 class_size <= 28 # is the value of class_size less than or equal to 28?
+
 # You can use variables in calculations
 double_class_size <- class_size * 2 # double the value of class_size and store it in a new variable double_class_size
 double_class_size # print the value of double_class_size
@@ -59,7 +60,7 @@ print(numeric_vector) # print the value of numeric_vector
 numeric_vector*2
 class(numeric_vector)
 
-# -------------------------- 03 Lists, data frames and tibbles ----------------
+# 04 Lists, data frames and tibbles ----------------
 # a list is a collection of objects, which can be of different types and lengths
 # such as text, numbers or boolean variables
 # Create a simple list
@@ -95,7 +96,7 @@ data_herbivores |> dplyr::filter(bodymass_kg > 100) # filter the rows where body
 # it shows the types of the variables, and only the first 10 rows and columns that fit on the screen
 data_herbivores |> tibble::as_tibble() 
 
-# -------------------------- 04 Data types - numeric and logical ----------------
+# 05 Data types - numeric and logical ----------------
 # There are several data types in R, the most common are:
 # Numeric: numbers with or without decimal points
 num_var <- 3.14 # assign the value 3.14 to the variable num_var
@@ -119,7 +120,7 @@ log_var2 # print the value of log_var2
 class(log_var2) # print the class of log_var2
 
 
-# -------------------------- 05 Data types - dates and time ----------------
+# 06 Data types - dates and time ----------------
 date_var <- as.Date("2023-01-12", format="%Y-%m-%d") # assign the value "2023-01-01" to the variable date_var
 ?strptime # check the help file of this function for the format codes
 date_var # print the value of date_var
@@ -150,21 +151,16 @@ grep("Nairobi", OlsonNames(), value = TRUE)
 date_var7 <- lubridate::ymd_hms("2023-12-18 14:30:00",tz="Africa/Nairobi") # assign the value "2023-12-18 14:30:00" to the variable date_var5 using
 date_var7
 
-# -------------------------- 06 functions ----------------
+# 07 functions ----------------
 # R has many built-in functions, for example the sqrt() function to calculate the square root of a number
-base::pi # print the value of pi, a function without arguments
-base::sqrt(16) # calculate the square root of 16
-x<-base::c(1,2,3,4,5)
-data
-base::mean(data) # calculate the mean of the numbers 1,2,3,4,5
-stats::sd(data) # calculate the standard deviation of the numbers 1,2,3,4,5
-# typically for functions from libraries base and stat we omit the library, but keep it for all others!
 
-# Also all stastistical analysis are implemented as functions, for example 
-# then the function returns the result of the analysis
+base::sqrt(16) # calculate the square root of 16
+
+# Also many stastistical analysis are implemented as functions
+# then the function returns the result of the analysis, often as a list
 
 model1<-lm(y~x) # linear model of y as a function of x
-print(model1) # print the result of the model
+print(model1) # print the result of analysis, or the contents of a the object model1
 class(model1)
 print(unclass(model1))
 model1$coefficients # print the coefficients of the model (slope and intercept)
@@ -204,7 +200,7 @@ my_stats <- function(x, na.rm = TRUE) {
   mean_val <- base::mean(x)
   median_val <- stats::median(x)
   sd_val <- stats::sd(x)
-  range_val <- baserange(x)
+  
   
   # Return a list with named components
   result <- list(
