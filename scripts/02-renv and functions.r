@@ -87,23 +87,43 @@ base::sqrt(9)
 # but for core packages as base (that come with the default R installation)
 # you typicallly do not specify from which package the function comes
 
-# assign variables
+# assigning and printing (show the contents) of variables
 a<-1
 b<-3
-a+b
+print(a+b)
 c<-a+b
-c
+print(c)
 base::sum(a,b) 
 c<-sum(a,b)
-c
+print(c)
 # check the class of a variable
 class(a)
 
-# 05 when using built-in functions from non-core packages 
+# 05 when using functions from non-core packages ------------------
 # then specify ALWAYS as package::function(parameter1, parameter2)
 # because the same function may exist in different packages
+# ----------------------------------------------------------------
+# calculate the date of the monday of the same week of a date
 lubridate::floor_date(lubridate::dmy("29-Aug-2026"), 
                                       unit = "week",
                                       week_start = 1)
 
-# writing your own functions 
+# 06 writing your own functions -----------------------------------
+# function days_between to calculate the number of days between two dates
+# usage example: 
+# days_between("31-Aug-2026", "4-Apr-2026")
+
+# define the days_between function
+days_between <- function(from, to) {
+  (lubridate::mdy(to) - lubridate::mdy(from)) |>
+    as.integer()
+}
+
+# 07 datasets in packages -------------------------------------------
+# most packages contain especially functions, but sometime also (example) datasets
+# ----------------------------------------------------------------
+
+# list what a package contains
+ls("package:dplyr")
+# print the dataset starwars that is in the dplyr package
+print(dplyr::starwars)
