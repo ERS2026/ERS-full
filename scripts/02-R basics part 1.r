@@ -99,7 +99,7 @@ print(c)
 # check the class of a variable
 class(a)
 
-# 05 when using functions from non-core packages ------------------
+# 05 using non-core package functions ---------------------------
 # then specify ALWAYS as package::function(parameter1, parameter2)
 # because the same function may exist in different packages
 # ----------------------------------------------------------------
@@ -113,11 +113,12 @@ lubridate::floor_date(lubridate::dmy("29-Aug-2026"),
 # usage example: 
 # days_between("31-Aug-2026", "4-Apr-2026")
 
-# define the days_between function
+# define the function days_between
 days_between <- function(from, to) {
-  (lubridate::mdy(to) - lubridate::mdy(from)) |>
-    as.integer()
+  as.integer(lubridate::dmy(to) - lubridate::dmy(from))
 }
+# use the function for a calculation
+days_between("1-Apr-2026", "31-Aug-2026")
 
 # 07 datasets in packages -------------------------------------------
 # most packages contain especially functions, but sometime also (example) datasets

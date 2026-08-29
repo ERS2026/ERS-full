@@ -18,7 +18,7 @@ renv::restore()
 library(tidyverse) # load the tidyverse libraries, including readr and ggplot2
 library(lubridate) # for working with dates
 
-# -------------------------- 02 Variables, vectors  ----------------
+# -------------------------- 02 Variables, vectors, operators  ----------------
 # Variables are used to store values, for example the number 3.14 in a variable called class_size (number of students in this class)
 class_size <- 28 # assign the value 28 to the variable class_size
 print(class_size) # print the value of the variable class_size
