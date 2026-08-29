@@ -63,11 +63,13 @@ if (.Platform$OS.type == "windows") {
 # ============================================================
 
 packages <- c(
+  "here",
   "renv",
   "pkgbuild",
   "googlesheets4",
   "purrr",
-  "tidyverse",
+  "tidyverse",  # tidyverse is a metapackage loading a family of related packages: ggplot, dplyr etc
+  "lubridate",
   "patchwork",
   "httpuv"
 )

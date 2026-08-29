@@ -2,18 +2,16 @@
 # title: "Using the renv library for making R predictable"
 # author: "Han Olff"
 # date: "2025-08-22"
-# project: Course ERS 2025
-# ---
+# project: ERS2026
 
-#------------01 Working with collapsable sections in your script ----
+# ---------- Collapsing or expanding sections of your script -----
 # When a line in your script starts with #---- (or more -) then you can collapse and expand it, 
 # try this by clicking on the small triangle next to the line number 8 above. 
 # Combine this by numbering the sections of your script, and always make section 01 the Header
 # This allows you to show an outline of your script, in the R Studio menu use /Code/Show document outline 
 # and allows quick naviations through your script
 
-
-#------------02 Using renv for making R predictable ----
+#------------Using renv for making R predictable ----
 # A major strength, but also potential challenge of R is that the software changes all the time. 
 # All functionality # of R comes from packages, and these are improved, expanded, updated all the time. 
 # Say that you develop a set of scripts in R now, for example to analyse the data in your master project,
@@ -50,27 +48,23 @@
 
 # Make sure that before you use renv::restore(), you have rtools installed. This is a set of tools that are 
 # needed to compile some packages from source. Install the RTools version that matches your R version. 
-# So if you have R version 4.5.x you need RTools version 45 You can download rtools from the [CRAN website at 
+# So if you have R version 4.6.x you need RTools45 (it works with R 4.5 and R 4.6 )
+# You can download RTools from the [CRAN website at 
 # this link: https://cran.r-project.org/bin/windows/Rtools
 # and choose the Rtools installer, using default installation settings.
-
-# -------------------------- 03 Setup working environment----------------
-# Make sure that you have the renv package installed. If not, install it using install.packages("renv")
-if (!requireNamespace("renv", quietly = TRUE)) {install.packages("renv")}
-# Load the renv package
-library(renv)
-# Make sure that before you use renv::restore(), you have rtools installed (outside R Studio), 
-# in the version that matches your R version (eg R version 4.5.x needs RTools version 45).
-# You can download rtools from the CRAN website at this link: https://cran.r-project.org/bin/windows/Rtools
-renv::restore() 
-# This will install the packages that are listed in the renv.lock file in the versions that are listed there.
-# these are not necessarily the latest versions of the packages, 
-# but the versions that were used when the renv.lock file was created
-# this makes sure that the script always works, for different collaborators now, and for yourself in the future
-# when packackes may have been updated and changed
+# Note that this works different on a Mac, see https://mac.r-project.org/tools/
 
 
-# Load the libraries that you will use in this script. Only load the libraries that you will actually use!
-library(tidyverse) # load the tidyverse libraries, including readr and ggplot2
+#--------------------------01 Set up the environment ----
+# First pull the latest changes to this repo from the Github repository 
+system2("git",c("-C",here::here(),"pull"))
 
-# The above section --- 01 Setup ----you always want to include at the start of your script!
+# run the Setup script for user-defined functions 
+source(here::here("scripts", "01-setup.R"))
+
+# authenticate Google Sheets access
+gsheets_auth() # authenticate google sheets access, this will open a browser window for authentication if not already authenticated, note this function is defined in script 01-setup.r
+
+# load libraries specific for this script (that are not in 01-setup.R)
+
+# This  section --- 01 Setup ----you always want to include at the start of your script!
