@@ -1,0 +1,295 @@
+---
+title: "R basics: the here package, variable assignment, and functions"
+subtitle: "Explain the here package, variable assignments and functions"
+author: "Han Olff"
+date: "2026-8-29"
+format: html
+editor: 
+  markdown: 
+    wrap: 72
+editor_options: 
+  chunk_output_type: console
+---
+
+# 01 Collapsing or expanding sections of your script
+
+When a line in your script starts with `----` (4 or more `-`), you
+can collapse and expand it: try this by clicking on the small
+triangle next to a section heading. Combine this with numbering the
+sections of your script, and always make section 01 the header. This
+allows you to show an outline of your script — in RStudio use
+Code/Show Document Outline — and allows quick navigation through
+your script. In the Explorer panel on the left in Positron, you can
+view the outline of your script that uses the headers, while also
+showing defined variables and functions in each section of your
+script.
+
+# 02 Using renv for making R predictable
+
+A major strength, but also a potential challenge, of R is that the
+software changes all the time. All functionality of R comes from
+packages, and these are improved, expanded, and updated all the
+time. Say that you develop a set of scripts in R now, for example to
+analyse the data in your master project, and you develop a
+publication from the results. But you get several revisions, and
+finally complete the paper two years later. By that time, you will
+have updated your versions of R and your packages several times.
+This may change the functionality of your scripts, so they may not
+work anymore. And when you publish the paper and deposit the data
+and scripts in a repository, even 10 years from now you want to be
+able to replicate your analyses, with the "old" versions of the
+packages that you used at the time when you did the analysis for the
+paper.
+
+A similar problem arises when working on scripts and data in a
+collaborative project with multiple people. Typically, not every
+collaborator will have exactly the same packages and same versions
+of the same package installed in their R library. This means only
+one person can improve the scripts and run them, instead of everyone
+contributing.
+
+The renv package solves this in combination with using an RStudio
+project and Git/GitHub — for the basis see
+https://rstudio.github.io/renv/. In a "fresh" project, you first
+create an `renv.lock` file with `renv::init()`. You typically only do
+this once. This initialization of your project serves two goals:
+
+1.  new packages are installed from then on in a library in the
+    local folder of your project, not anymore in your general R
+    installation, so the packages "belong" to the project.
+2.  you, or your collaborators, can use `renv::restore()` to create
+    now or later exactly the same R library (same versions of the
+    packages) as you are using to develop the scripts, where these
+    version numbers are read from the `renv.lock` file. If certain
+    packages are not installed yet on that specific computer, they
+    will be installed.
+
+This ensures that your project uses the exact same package versions
+and dependencies that were initially recorded, making it easier to
+reproduce analyses and maintain consistency across different
+environments or collaborators. The version of packages in the
+library can be updated by yourself or your collaborator, but then
+`renv::restore()` causes everyone to use the same versions of all
+libraries. Be careful with this: only update your library when
+really necessary (e.g. a package contains an error or missing
+functionality). Otherwise just stick to the version that you used
+when you started the project. You do not need to do `renv::init()`
+now, because you have cloned an existing project.
+
+Make sure that before you use `renv::restore()` on a Windows machine,
+you have RTools installed. This is a set of tools that are needed to
+compile some packages from source. Install the RTools version that
+matches your R version — so if you have R version 4.6.x you need
+RTools45 (it works with R 4.5 and R 4.6). You can download RTools
+from the CRAN website at
+https://cran.r-project.org/bin/windows/Rtools, and choose the
+Rtools installer, using default installation settings. Note that
+this works differently on a Mac: there you do not work with RTools,
+but with Apple's developer toolchain instead, see
+https://mac.r-project.org/tools/.
+
+# 03 Setup your working environment
+
+Run the setup script, containing package restoration, helper
+functions, etc.
+
+```{r}
+# run the setup script
+source(here::here("scripts", "01-setup.R"))
+
+# pull the changes in the online repository to this local folder
+# this is important when you collaborate on the project
+system2("git", c("-C", here::here(), "pull"))
+
+# show which package namespaces are loaded to memory with library()
+search()
+```
+
+# 04 The here package
+
+The `here` package gets the root folder of your project; use this
+instead of absolute file locations. For example, do NOT use
+`source("c:\github\ERS2026\01-setup.R")`, as this will cause problems
+when collaborating on your project.
+
+```{r}
+# show the root folder of your git-enabled project
+here::here()
+```
+
+# 05 Assignments, calculations, functions, vectors, lists, data frames
+
+## Assigning objects, and using functions from a core package.
+Objects are anything stored in R in memory that you can refer to by
+a name. Create objects through the assignment operator `<-`
+(variables).
+Functions in R perform calculations and are typically part of a
+package. R comes with a set of core packages installed with the
+default R installation — mainly `base`, `stats`, `utils`, `graphics`,
+`grDevices`, `methods`, and `datasets`. Functions in these core
+packages can be used without loading the package with `library()`;
+for example, `sum()` is in the `base` package.
+
+```{r}
+# adds two numbers 
+1 + 3
+
+# assign two variables and add them
+var1 <- 1
+var2 <- 3
+var1 + var2
+
+# use built-in function from a package
+sum(var1, var2)
+
+# objects can hold more than one value: create a vector with the c() function
+var3<-c(var1,var2)
+var3
+sum(var3)
+
+# Note that the default for missing values is na.rm = FALSE, so if one of the values is NA, the result will be NA. You can change this by setting na.rm = TRUE.
+var4<-NA
+data<-c(var3, var4)
+data
+sum(data)
+sum(data, na.rm = TRUE)
+
+# a full specification for using the sum function would be
+base::sum(data, na.rm = TRUE)
+# but for core packages such as base (that come with the default R
+# installation) you typically do not specify from which package the
+# function comes
+```
+
+
+Objects can hold more than one value: create vectors.
+
+```{r}
+days <- c(1, 2, 3, 4, 5, 6)
+days
+class(days)
+bodymass_g <- c(2, 3, 5, 7, 9, 11)
+base::plot(days, bodymass_g)
+```
+
+Inspecting the code for a built-in function (from a core package).
+
+```{r}
+a <- c(1, 2, 3)
+b <- 10
+base::append(a, b)
+base::append
+```
+
+```{r}
+#| eval: false
+?base::append()
+```
+
+A named list is a collection of different objects, which can be of
+different types and lengths, such as text, numbers, or boolean
+variables. Create a named list with four elements.
+
+```{r}
+elephant_properties <- list(
+  name = "Elephant",
+  weight = 5400,
+  is_endangered = TRUE,
+  colors = c("gray", "white")
+)
+elephant_properties
+
+# show only the weight
+elephant_properties$weight
+```
+
+A data frame is a special type of named list with rows and columns
+(variables). In practice, we typically read a data frame from a
+file, rather than creating it ourselves in a script like this.
+
+```{r}
+students <- data.frame(
+  name = c("Alex", "Sam", "Robin"),
+  age = c(21, 23, 20)
+)
+print(students)
+barplot(age ~ name, data = students)
+```
+
+# 06 Using non-core package functions
+
+For functions from non-core packages, always specify
+`package::function(parameter1, parameter2)`, because the same
+function may exist in different packages.
+
+```{r}
+#| eval: false
+# show help on the lubridate package
+help(package = lubridate)
+```
+
+```{r}
+# list the functions in the lubridate package
+ls("package:lubridate")
+```
+
+```{r}
+#| eval: false
+# get help on the function floor_date from lubridate
+help("floor_date", package = "lubridate")
+```
+
+```{r}
+# calculate the date of the monday of the same week of a date
+lubridate::floor_date(lubridate::dmy("29-Aug-2026"),
+  unit = "week",
+  week_start = 1
+)
+```
+
+# 07 Writing your own functions
+
+Your new function can use existing functions from packages — here
+the function `dmy()` is used from the lubridate package.
+
+```{r}
+# define the function days_between: the number of days between two dates
+days_between <- function(from, to) {
+  as.integer(lubridate::dmy(to) - lubridate::dmy(from))
+}
+# use the function for a calculation
+days_between("1-Apr-2026", "31-Aug-2026")
+```
+
+```{r}
+# Define a function that calculates the area of a circle.
+circle_area <- function(radius) { # radius is an argument of the function
+  area <- pi * radius^2 # calculate area as A = pi * r^2
+  return(area) # return the calculated value
+}
+# Call the function: calculate the area of a circle with radius = 5
+circle_area(5) # the function returns the area
+```
+
+# 08 Datasets in packages
+
+Most packages contain especially functions, but sometimes also
+(example) datasets.
+
+```{r}
+# list what the package dplyr contains
+ls("package:dplyr")
+
+# print the dataset starwars dataframe that is in the dplyr package
+class(dplyr::starwars)
+print(dplyr::starwars)
+
+# show all variable names of the dataset
+names(dplyr::starwars)
+
+# show all levels of the variable name as a vector
+dplyr::starwars$name
+
+# frequency table of home world
+table(dplyr::starwars$homeworld)
+```
