@@ -1,0 +1,7 @@
+project:
+  type: default
+
+format:
+  html:
+    css: css/styles.css
+    code-overflow: wrap

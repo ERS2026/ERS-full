@@ -11,3 +11,6 @@
 # Quarto cache
 .quarto/
 *_cache/
+
+/.quarto/
+**/*.quarto_ipynb

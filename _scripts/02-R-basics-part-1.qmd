@@ -1,14 +1,14 @@
 ---
-title: "R basics: the here package, variable assignment, and functions"
-subtitle: "Explain the here package, variable assignments and functions"
+title: "R basics part 1"
+subtitle: "Explain script sections , the here package, variable assignments and functions"
 author: "Han Olff"
 date: "2026-8-29"
-format: html
-editor: 
-  markdown: 
-    wrap: 72
 editor_options: 
   chunk_output_type: console
+execute:
+  output: false
+  warning: false
+  message: false
 ---
 
 # 01 Collapsing or expanding sections of your script

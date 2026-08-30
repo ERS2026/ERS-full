@@ -1,0 +1,75 @@
+/* Annotation text */
+body {
+  font-size: 9pt;
+  color: black;
+}
+
+/* Code size */
+pre,
+pre code,
+div.sourceCode,
+code.sourceCode {
+  font-size: 10pt;
+}
+
+/* Wrap long code lines */
+div.sourceCode {
+  overflow-x: hidden;
+}
+
+pre.sourceCode,
+pre.sourceCode > code.sourceCode,
+pre.sourceCode > code.sourceCode > span {
+  white-space: pre-wrap;
+}
+
+pre.sourceCode > code.sourceCode {
+  overflow-wrap: anywhere;
+}
+
+/* Light gray code-block background */
+div.sourceCode {
+  background-color: #d9d9d9 !important;
+}
+
+pre.sourceCode {
+  background-color: transparent !important;
+}
+
+
+/* Printing */
+@media print {
+
+  body {
+    font-size: 9pt;
+    color: black;
+  }
+
+  pre,
+  pre code,
+  div.sourceCode,
+  code.sourceCode {
+    font-size: 10pt;
+  }
+
+  div.sourceCode {
+    overflow-x: hidden;
+    background-color: #d9d9d9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  pre.sourceCode {
+    background-color: transparent !important;
+  }
+
+  pre.sourceCode,
+  pre.sourceCode > code.sourceCode,
+  pre.sourceCode > code.sourceCode > span {
+    white-space: pre-wrap;
+  }
+
+  pre.sourceCode > code.sourceCode {
+    overflow-wrap: anywhere;
+  }
+}
