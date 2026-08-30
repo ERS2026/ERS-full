@@ -4,6 +4,15 @@ body {
   color: black;
 }
 
+
+/* Headings */
+.title {font-size: 16pt;}
+.subtitle {font-size: 14pt;}
+h1 {font-size: 14pt;}
+h2 {font-size: 12pt;}
+h3 {font-size: 11pt;}
+
+
 /* Code size */
 pre,
 pre code,
@@ -29,7 +38,7 @@ pre.sourceCode > code.sourceCode {
 
 /* Light gray code-block background */
 div.sourceCode {
-  background-color: #d9d9d9 !important;
+  background-color: #e3e3e3 !important;
 }
 
 pre.sourceCode {
@@ -39,6 +48,14 @@ pre.sourceCode {
 
 /* Printing */
 @media print {
+
+  title {
+    font-size: 16pt;
+  }
+
+  subtitle {
+    font-size: 14pt;
+  }
 
   body {
     font-size: 9pt;

@@ -1,5 +1,5 @@
 ---
-title: "R basics: variables, data types, dates, and functions"
+title: "03 R basics: variables, data types, dates, and functions"
 subtitle: "Introduce variables, vectors, operators, data frames, tibbles, data types, dates, functions, models, and methods"
 author: "Han Olff"
 date: "2026-8-29"
