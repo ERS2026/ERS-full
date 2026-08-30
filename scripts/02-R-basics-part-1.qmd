@@ -11,11 +11,19 @@ execute:
   message: false
 ---
 
-# 01 Collapsing or expanding sections of your script
+# Quarto scripts and R scripts
 
-When a line in your script starts with `----` (4 or more `-`), you can collapse and expand it: try this by clicking on the small triangle next to a section heading. Combine this with numbering the sections of your script, and always make section 01 the header. This allows you to show an outline of your script — in RStudio use Code/Show Document Outline — and allows quick navigation through your script. In the Explorer panel on the left in Positron, you can view the outline of your script that uses the headers, while also showing defined variables and functions in each section of your script.
+Quarto is a publishing system that allows you to create documents, reports, and presentations in various formats. R scripts are used to perform data analysis and visualization in R. Quarto scripts can include R code chunks, which are executed when the document is rendered. Quarto scripts are also usefull for explaining to yourself or to others (as we will do in this course) how your R scripts work. Quarto scripts can be rendered to HTML, PDF, or Word documents, while R scripts are typically run in an interactive R session. Quarto scripts can also include text, images, and other media, while R scripts are primarily focused on code and output.
+Both quarto and R scripts are plain text files, and can be edited in any text editor. However, RStudio provides a user-friendly interface for working with both types of scripts, including syntax highlighting, code completion, and debugging tools. When the extension of a script is .r it is treated as an R script, and when the extension is .qmd it is treated as a Quarto script. In this course we will use Quarto scripts to explain how R scripts work, and to provide additional context and information about the analysis.
+
+# 02 Collapsing or expanding sections of your script, and using an outline of your script
+
+In a quarto script, you can use headers to create sections. Use `#` for a top-level header, `##` for a second-level header, and so on. The number of `#` symbols indicates the level of the header. For example, `# 01 Setup your environment` is a top-level header, while `## 01.1 Install packages` is a second-level header. The headers can be collapsed or expanded in the script editor, allowing you to hide or show the content of each section. This is useful for organizing your code and making it easier to navigate. Collapse a sections using the triangle next to the header, and expand it again by clicking on the triangle again. You can also use the keyboard shortcut `Ctrl + Shift + -` to collapse all sections, and `Ctrl + Shift + =` to expand all sections.
+When a line in an R script starts with `----` (4 or more `-`), you can also collapse and expand it. Combine this with numbering the sections of your script, and always make section 01 the header. 
+
+Headers in R or Quarto scripts allow you to show an outline of your script — in RStudio use Code/Show Document Outline — and allows quick navigation through your script. In the Explorer panel on the left in Positron, you can view the outline of your script that uses the headers, while also showing defined variables and functions in each section of your script.
 +
-# 02 Using renv for making R predictable
+# 03 Using renv for making R predictable
 
 A major strength, but also a potential challenge, of R is that the software changes all the time. All functionality of R comes from packages, and these are improved, expanded, and updated all the time. Say that you develop a set of scripts in R now, for example to analyse the data in your master project, and you develop a publication from the results. But you get several revisions, and finally complete the paper two years later. By that time, you will have updated your versions of R and your packages several times. This may change the functionality of your scripts, so they may not work anymore. And when you publish the paper and deposit the data and scripts in a repository, even 10 years from now you want to be able to replicate your analyses, with the "old" versions of the packages that you used at the time when you did the analysis for the paper.
 
@@ -30,7 +38,7 @@ This ensures that your project uses the exact same package versions and dependen
 
 Make sure that before you use `renv::restore()` on a Windows machine, you have RTools installed. This is a set of tools that are needed to compile some packages from source. Install the RTools version that matches your R version — so if you have R version 4.6.x you need RTools45 (it works with R 4.5 and R 4.6). You can download RTools from the CRAN website at https://cran.r-project.org/bin/windows/Rtools, and choose the Rtools installer, using default installation settings. Note that this works differently on a Mac: there you do not work with RTools, but with Apple's developer toolchain instead, see https://mac.r-project.org/tools/.
 
-# 03 Setup your working environment
+# 04 Setup your working environment
 
 Run the setup script, containing package restoration, helper functions, etc.
 
@@ -46,7 +54,7 @@ system2("git", c("-C", here::here(), "pull"))
 search()
 ```
 
-# 04 The here package
+# 05 The here package
 
 The `here` package gets the root folder of your project; use this instead of absolute file locations. For example, do NOT use `source("c:\github\ERS2026\01-setup.R")`, as this will cause problems when collaborating on your project.
 
@@ -55,7 +63,7 @@ The `here` package gets the root folder of your project; use this instead of abs
 here::here()
 ```
 
-# 05 Assignments, calculations, functions, vectors, lists, data frames
+# 06 Assignments, calculations, functions, vectors, lists, data frames
 
 ## Assigning objects, and using functions from a core package
 
@@ -144,7 +152,7 @@ print(students)
 barplot(age ~ name, data = students)
 ```
 
-# 06 Using non-core package functions
+# 07 Using non-core package functions
 
 For functions from non-core packages, always specify `package::function(parameter1, parameter2)`, because the same function may exist in different packages.
 
@@ -173,7 +181,7 @@ lubridate::floor_date(lubridate::dmy("29-Aug-2026"),
 )
 ```
 
-# 07 Writing your own functions
+# 08 Writing your own functions
 
 Your new function can use existing functions from packages — here the function `dmy()` is used from the lubridate package.
 
@@ -196,7 +204,7 @@ circle_area <- function(radius) { # radius is an argument of the function
 circle_area(5) # the function returns the area
 ```
 
-# 08 Datasets in packages
+# 09 Datasets in packages
 
 Most packages contain especially functions, but sometimes also (example) datasets.
 

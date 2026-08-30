@@ -3,12 +3,12 @@ title: "R basics: variables, data types, dates, and functions"
 subtitle: "Introduce variables, vectors, operators, data frames, tibbles, data types, dates, functions, models, and methods"
 author: "Han Olff"
 date: "2026-8-29"
-format: html
-editor: 
-  markdown: 
-    wrap: 72
 editor_options: 
   chunk_output_type: console
+execute:
+  output: false
+  warning: false
+  message: false
 ---
 
 # 01 Setup your environment
@@ -18,7 +18,7 @@ GitHub.
 
 ```{r}
 # Run the setup script containing package restoration, helper functions, etc.
-source(here::here("scripts", "01-setup.R"))
+source(here::here("scripts", "01-setup.r"))
 
 # Pull changes from the online repository into this local project folder.
 # This is especially important when collaborating on the same project.
