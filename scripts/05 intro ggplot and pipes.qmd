@@ -118,18 +118,22 @@ summary(model_lm)
 ```
 
 Make same plot again but now showing a separate regression line per year
-
+Also save the figure as png file, so you can use it in your report. Better to do this with ggsave() rather than through saving it from the plot window, as you can used fixed dimensions and resolution, and it is reproducible.
+Also pay attention to how to name your figure. It will help you a lot if you include the name of your project and the script in which it is produced in the file name. And then put this file name in the caption of the figure in your report, so you can easily find it back again if you need to change the figure later on.
 ```{r}
 # color the points by year, but plot one regression line
 ggplot2::ggplot(data=FactCockleSize2,
                 mapping=aes(x=Length_mm,y=Thickness_mm)) +
-  geom_point(mapping=aes(col=factor(Year)), size=2) +
+  geom_point(mapping=aes(col=factor(Year)), size=1) +
   xlab("cockle length(mm)") +
   ylab("cockle width (mm)") +
-  geom_smooth(method='lm')
+  geom_smooth(method='lm') +
+  theme_bw(base_size = 10)
 
 # as I like the figure, I will save it as png file, so I can use it in my report
-ggsave(filename = here::here("figures/script05", "fig01.png"), width = 12, height = 8, units = "cm", dpi = 300)
+ggsave(filename = here::here("figures/ERS2026-Script05", "ERS2026-Script05-Fig01.png"), 
+      width = 12, height = 7.5, 
+      units = "cm", dpi = 300, bg = "white")
 
 ```
 
