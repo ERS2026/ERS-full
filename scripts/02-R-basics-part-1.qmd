@@ -106,75 +106,110 @@ base::sum(data, na.rm = TRUE)
 ## Inspecting the code for a built-in function (from a core package)
 
 ```{r}
+# check what the append function from the base package does
 a <- c(1, 2, 3)
 b <- 10
+# call the function
 base::append(a, b)
+
+# get help on this append function 
+?base::append()
+# the function has three possible parameters: x, values, and after, as explained in this help page
+
+# show the source code of this append function
+# the code between {  }  is executed when the function is called 
 base::append
 ```
 
-```{r}
-#| eval: false
-?base::append()
-```
-
-## Data types and data structures in R
-
-R has different data types, such as numeric, character, logical, factor and list. You can check the data type of an object with the `class()` function. Data can be organized in different data structures, such as vectors, matrices, data frames and lists. You can check the data structure of an object with the `str()` function.
-
-## Named lists
-
-A named list is a collection of different objects, which can be of different types and lengths, such as text, numbers, or boolean variables. Create a named list with four elements.
+# Data types and data structures in R
+R has different data types, such as numeric, character, logical, factor and list. You can check the data type of an object with the class() function. 
+Also R has different  different data structures, such as vectors, matrices, arrays, lists and data frames tibbles. You can check the data structure of an object with the str() function.
 
 ```{r}
+# numeric type
+a<-12
+class(a)
+str(a)
+
+# character type (or strings)
+name<-"Feles"
+class(name)
+str(name)
+
+# boolean type
+important<-TRUE
+class(important)
+str(important)
+
+# 'vector' data structure (typically of one type)
+cats<-c("Feles", "Cyper", "Maupie") # character vector
+class(cats)
+str(cats)
+bodymass_g <- c(2, 3, 5, 7, 9, 11) # numeric vector
+bodymass_g
+class(bodymass_g)
+str(bodymass_g)
+
+# 'matrix' data structure for 2-dimensional data (typically of one type)
+matrix1 <- matrix(1:9, nrow = 3, ncol = 3)
+matrix1
+class(matrix1)
+str(matrix1)
+
+# 'array' data structure for 3- or more-dimensional data (typically of one type)
+array1 <- array(1:27, dim = c(3, 3, 3))
+array1
+class(array1)
+str(array1)
+
+# 'named list'data structure for different types of data in one object
 elephant_properties <- list(
   name = "Elephant",
   weight = 5400,
   is_endangered = TRUE,
   colors = c("gray", "white")
 )
-class(elephant_properties)
-# show the elements of the list
-names(elephant_properties)
-# inspect the contents of the elements
 elephant_properties
-
+class(elephant_properties)
+str(elephant_properties)
+names(elephant_properties)
 # show only the weight
 elephant_properties$weight
-```
 
-A data frame is a special type of named list with rows and columns (variables). In practice, we typically read a data frame from a file, rather than creating it ourselves in a script like this.
-
-```{r}
-students <- data.frame(
-  name = c("Alex", "Sam", "Robin"),
-  age = c(21, 23, 20)
+# 'data frame' data structure for tabular data (list of vectors of equal length, but maybe different types)
+data_herbivores <- data.frame(
+  id = c(1, 2, 3),
+  species = c("Elephant", "Rhino", "Impala"),
+  bodymass_kg = c(5400, 1200, 50),
+  is_ungulate = c(FALSE, TRUE, TRUE)
 )
-print(students)
-barplot(age ~ name, data = students)
+data_herbivores
+class(data_herbivores)
+str(data_herbivores)
+
+# tibbles are a modern version of data frames, and are part of the tidyverse package. They have some advantages over data frames, such as better printing and subsetting. You can convert a data frame to a tibble with the `as_tibble()` function from the tibble package.
+tibble_herbivores <- tibble::as_tibble(data_herbivores)
+tibble_herbivores
+class(tibble_herbivores)
+str(tibble_herbivores)
 ```
+
 
 # 07 Using non-core package functions
 
 For functions from non-core packages, always specify `package::function(parameter1, parameter2)`, because the same function may exist in different packages.
+We will use the function floor_date() from the lubridate package as an example. Lubridate is not a core package. This function rounds a date down to the nearest specified time unit (e.g., day, week, month, year). The lubridate package is part of the tidyverse, and is used for working with dates and times in R.
 
 ```{r}
-#| eval: false
 # show help on the lubridate package
 help(package = lubridate)
-```
 
-```{r}
 # list the functions in the lubridate package
 ls("package:lubridate")
-```
 
-```{r}
-#| eval: false
 # get help on the function floor_date from lubridate
 help("floor_date", package = "lubridate")
-```
 
-```{r}
 # calculate the date of the monday of the same week of a date
 lubridate::floor_date(lubridate::dmy("29-Aug-2026"),
   unit = "week",
@@ -191,18 +226,16 @@ Your new function can use existing functions from packages — here the function
 days_between <- function(from, to) {
   as.integer(lubridate::dmy(to) - lubridate::dmy(from))
 }
-# use the function for a calculation
+# call the function to do a calculation
 days_between("1-Apr-2026", "31-Aug-2026")
-```
 
-```{r}
 # Define a function that calculates the area of a circle.
 circle_area <- function(radius) { # radius is an argument of the function
   area <- pi * radius^2 # calculate area as A = pi * r^2
   return(area) # return the calculated value
 }
-# Call the function: calculate the area of a circle with radius = 5
-circle_area(5) # the function returns the area
+# Call the function to do a calculation. 
+circle_area(5) # the function returns the area of a circle with radius 5
 ```
 
 # 09 Datasets in packages
