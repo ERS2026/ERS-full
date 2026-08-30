@@ -1,0 +1,161 @@
+---
+title: "07 Long, wide, and multivariate data"
+subtitle: "Reshape wide data into long data using tidyr and ggplot the results"
+author: "Han Olff"
+date: "2025-9-02"
+editor_options: 
+  chunk_output_type: console
+execute:
+  output: false
+  warning: false
+  message: false
+---
+
+# 01 Setup your environment
+
+Run the common setup script and synchronize the local project with
+GitHub.
+
+```{r}
+# Run the setup script containing package restoration, helper functions, etc.
+source(here::here("scripts", "01-setup.R"))
+
+# Pull changes from the online repository into this local project folder.
+# This is especially important when collaborating on the same project.
+system2("git", c("-C", here::here(), "pull"))
+
+# show which package namespaces are loaded to memory with library()
+search()
+
+# authenticate your @student.rug.nl google account
+gsheets_auth()
+```
+
+# 02 Read and reshape the data
+
+In this script we will work with a vegetation dataset that is in wide format, where each species is a separate column. We will reshape the data into long format, where species is a single variable, and then plot the results.
+The input vegetation database can optionally be opened in your browser to inspect it directly.
+https://docs.google.com/spreadsheets/d/1WIzkUvunLk1buybZ04Oko8wnF65EbuXjWEviWbeAwu4
+
+Read the vegetation data from the Google Sheet.
+
+```{r}
+read_gsdb("https://docs.google.com/spreadsheets/d/1WIzkUvunLk1buybZ04Oko8wnF65EbuXjWEviWbeAwu4", sheets = "FactVegCov", separate = TRUE)
+# check which species were recorded in the dataset, and in which years
+names(FactVegCov)
+unique(FactVegCov$Year)
+```
+
+We will now reshape the data using piping from wide to long format, where
+'speciesname' will become a single variable instead of distributed over multiple
+columns; treat bare, litter, and moss will be treated as if they are species (see the
+"data import cheatsheet"). We remove `Salicornia.europaea` and
+`Salicornia.procumbens` from the dataset, as `Salicornia.sp` is their
+sum of these two; the two species were not separated in earlier years
+We will also remove the variables `bare`, `litter`, `mosses` as they are not really species
+
+Reshape the table from wide to long format 
+Salicornia species and bare/litter/mosses variables described above
+set which original columns to keep (TransectPoint_ID and Year) and which to reshape (all other columns)
+
+```{r}
+FactVegCov |> 
+  dplyr::select(-c(SalicEur, SalicPro, Bare, Litter, Mosses)) |>
+  tidyr::pivot_longer(cols = -c(TransectPoint_ID, Year), 
+                      names_to = "speciesname", 
+                      values_to = "cover") -> FactVegCov_long
+
+# and show the names of all the species in the new dataset
+unique(FactVegCov_long$speciesname) 
+```
+
+Now we want to find which species are most common in the dataset. Add a variable to the
+dataset that is the rank number of the species according to summed
+abundance of each species over the whole dataset (1 = most abundant
+species).
+
+```{r}
+FactVegCov_long |> 
+  dplyr::group_by(speciesname) |> 
+  dplyr::summarize(total_cover = sum(cover)) |> 
+  dplyr::arrange(desc(total_cover)) |> 
+  dplyr::mutate(rank = row_number()) -> FactVegCov_ranked
+```
+
+Now merge with the long file, adding a new column that indicates the rank of the species for every observation. This we can use to filter the data for the more common species. 
+
+```{r}
+FactVegCov_long |> 
+  dplyr::left_join(FactVegCov_ranked, by = "speciesname") -> FactVegCov_long_ranked
+print(FactVegCov_long_ranked)
+```
+
+# 03 Plot cover of most common species along the transect
+
+Plot the 5 most dominant species as a line diagram, cover (y) versus
+`distance_m` (x), with ggplot, a separate plot for each year, each
+species with a different line color.
+
+```{r}
+FactVegCov_long_ranked |> 
+  dplyr::filter(rank <= 5) |> 
+  ggplot(aes(x = TransectPoint_ID, y = cover, color = speciesname)) +
+  geom_line() +
+  facet_wrap(~Year) +
+  labs(title = "Cover of Most Common Species Along the Transect",
+       x = "Distance (m)",
+       y = "Cover (%)")
+
+# save the plot to a png file 
+ggsave(filename = here::here("figures/ERS2026-Script07", "ERS2026-Script07-Fig01.png"), 
+      width = 1920, height = 1200, 
+      units = "px", bg = "white")
+
+```
+
+In this graph it is not easy to see the changes over time
+Plot now instead the change in cover along the distance transect, and over the
+different years, as a heatmap for the 10 most abundant species (using
+ggplot), with a separate heatmap plot per species.
+
+```{r}
+FactVegCov_long_ranked |> 
+  dplyr::filter(rank <= 10) |> 
+  ggplot(aes(x = factor(TransectPoint_ID), y = Year, fill = cover)) +
+  geom_tile() +
+  facet_wrap(~speciesname) +
+  labs(title = "Change in Cover of Most Common Species Along the Transect Over Time",
+       x = "Distance (m)",
+       y = "Year") +
+  scale_fill_viridis_c(option = "plasma", name = "Cover (%)")
+
+# save the plot to a png file
+ggsave(filename = here::here("figures/ERS2026-Script07", "ERS2026-Script07-Fig02.png"), 
+      width = 1920, height = 1200, 
+      units = "px", bg = "white")
+```
+
+
+# 04 Plot cover along the elevation gradient
+
+Load the elevation data from 2017-2023, select the variables `year`,
+`distance`, and `elevation_m`, and add the `elevation_m` variable to
+the `vdat3` vegetation data of 2017-2020.
+
+```{r}
+# TODO: load the elevation data and select year, distance, elevation_m
+```
+
+Join with the vegetation data.
+
+```{r}
+# TODO: join the elevation data with the vegetation data
+```
+
+Plot the change in cover along the elevation gradient, and over the
+different years, as a heatmap for the 10 most abundant species (using
+ggplot), with a separate heatmap plot per species.
+
+```{r}
+# TODO: plot a heatmap of cover along elevation and year, per species
+```

@@ -5,7 +5,7 @@
 # description: Calculate flooding probability at 1 cm resolution from the Schiermonnikoog ferry pier tidal gauge data
 # description: data were collected at 10 min intervals 1 Jan 202
 # input database: SchierTideDB 
-# browseURL("https://docs.google.com/spreadsheets/d/1DOzvscotzWXm5MmEFrZhvPY820weEZVcSfUYz_5Gyf4")
+# https://docs.google.com/spreadsheets/d/1DOzvscotzWXm5MmEFrZhvPY820weEZVcSfUYz_5Gyf4
 # WARNING: this is a very large database (~ 2 million records)
 # this script requires sufficient ram (at least 16 Gb) and good processor (>i7) to run
 
