@@ -13,85 +13,26 @@ editor_options:
 
 # 01 Collapsing or expanding sections of your script
 
-When a line in your script starts with `----` (4 or more `-`), you
-can collapse and expand it: try this by clicking on the small
-triangle next to a section heading. Combine this with numbering the
-sections of your script, and always make section 01 the header. This
-allows you to show an outline of your script — in RStudio use
-Code/Show Document Outline — and allows quick navigation through
-your script. In the Explorer panel on the left in Positron, you can
-view the outline of your script that uses the headers, while also
-showing defined variables and functions in each section of your
-script.
-
+When a line in your script starts with `----` (4 or more `-`), you can collapse and expand it: try this by clicking on the small triangle next to a section heading. Combine this with numbering the sections of your script, and always make section 01 the header. This allows you to show an outline of your script — in RStudio use Code/Show Document Outline — and allows quick navigation through your script. In the Explorer panel on the left in Positron, you can view the outline of your script that uses the headers, while also showing defined variables and functions in each section of your script.
++
 # 02 Using renv for making R predictable
 
-A major strength, but also a potential challenge, of R is that the
-software changes all the time. All functionality of R comes from
-packages, and these are improved, expanded, and updated all the
-time. Say that you develop a set of scripts in R now, for example to
-analyse the data in your master project, and you develop a
-publication from the results. But you get several revisions, and
-finally complete the paper two years later. By that time, you will
-have updated your versions of R and your packages several times.
-This may change the functionality of your scripts, so they may not
-work anymore. And when you publish the paper and deposit the data
-and scripts in a repository, even 10 years from now you want to be
-able to replicate your analyses, with the "old" versions of the
-packages that you used at the time when you did the analysis for the
-paper.
+A major strength, but also a potential challenge, of R is that the software changes all the time. All functionality of R comes from packages, and these are improved, expanded, and updated all the time. Say that you develop a set of scripts in R now, for example to analyse the data in your master project, and you develop a publication from the results. But you get several revisions, and finally complete the paper two years later. By that time, you will have updated your versions of R and your packages several times. This may change the functionality of your scripts, so they may not work anymore. And when you publish the paper and deposit the data and scripts in a repository, even 10 years from now you want to be able to replicate your analyses, with the "old" versions of the packages that you used at the time when you did the analysis for the paper.
 
-A similar problem arises when working on scripts and data in a
-collaborative project with multiple people. Typically, not every
-collaborator will have exactly the same packages and same versions
-of the same package installed in their R library. This means only
-one person can improve the scripts and run them, instead of everyone
-contributing.
+A similar problem arises when working on scripts and data in a collaborative project with multiple people. Typically, not every collaborator will have exactly the same packages and same versions of the same package installed in their R library. This means only one person can improve the scripts and run them, instead of everyone contributing.
 
-The renv package solves this in combination with using an RStudio
-project and Git/GitHub — for the basis see
-https://rstudio.github.io/renv/. In a "fresh" project, you first
-create an `renv.lock` file with `renv::init()`. You typically only do
-this once. This initialization of your project serves two goals:
+The renv package solves this in combination with using an RStudio project and Git/GitHub — for the basis see https://rstudio.github.io/renv/. In a "fresh" project, you first create an `renv.lock` file with `renv::init()`. You typically only do this once. This initialization of your project serves two goals:
 
-1.  new packages are installed from then on in a library in the
-    local folder of your project, not anymore in your general R
-    installation, so the packages "belong" to the project.
-2.  you, or your collaborators, can use `renv::restore()` to create
-    now or later exactly the same R library (same versions of the
-    packages) as you are using to develop the scripts, where these
-    version numbers are read from the `renv.lock` file. If certain
-    packages are not installed yet on that specific computer, they
-    will be installed.
+1.  new packages are installed from then on in a library in the local folder of your project, not anymore in your general R installation, so the packages "belong" to the project.
+2.  you, or your collaborators, can use `renv::restore()` to create now or later exactly the same R library (same versions of the packages) as you are using to develop the scripts, where these version numbers are read from the `renv.lock` file. If certain packages are not installed yet on that specific computer, they will be installed.
 
-This ensures that your project uses the exact same package versions
-and dependencies that were initially recorded, making it easier to
-reproduce analyses and maintain consistency across different
-environments or collaborators. The version of packages in the
-library can be updated by yourself or your collaborator, but then
-`renv::restore()` causes everyone to use the same versions of all
-libraries. Be careful with this: only update your library when
-really necessary (e.g. a package contains an error or missing
-functionality). Otherwise just stick to the version that you used
-when you started the project. You do not need to do `renv::init()`
-now, because you have cloned an existing project.
+This ensures that your project uses the exact same package versions and dependencies that were initially recorded, making it easier to reproduce analyses and maintain consistency across different environments or collaborators. The version of packages in the library can be updated by yourself or your collaborator, but then `renv::restore()` causes everyone to use the same versions of all libraries. Be careful with this: only update your library when really necessary (e.g. a package contains an error or missing functionality). Otherwise just stick to the version that you used when you started the project. You do not need to do `renv::init()` now, because you have cloned an existing project.
 
-Make sure that before you use `renv::restore()` on a Windows machine,
-you have RTools installed. This is a set of tools that are needed to
-compile some packages from source. Install the RTools version that
-matches your R version — so if you have R version 4.6.x you need
-RTools45 (it works with R 4.5 and R 4.6). You can download RTools
-from the CRAN website at
-https://cran.r-project.org/bin/windows/Rtools, and choose the
-Rtools installer, using default installation settings. Note that
-this works differently on a Mac: there you do not work with RTools,
-but with Apple's developer toolchain instead, see
-https://mac.r-project.org/tools/.
+Make sure that before you use `renv::restore()` on a Windows machine, you have RTools installed. This is a set of tools that are needed to compile some packages from source. Install the RTools version that matches your R version — so if you have R version 4.6.x you need RTools45 (it works with R 4.5 and R 4.6). You can download RTools from the CRAN website at https://cran.r-project.org/bin/windows/Rtools, and choose the Rtools installer, using default installation settings. Note that this works differently on a Mac: there you do not work with RTools, but with Apple's developer toolchain instead, see https://mac.r-project.org/tools/.
 
 # 03 Setup your working environment
 
-Run the setup script, containing package restoration, helper
-functions, etc.
+Run the setup script, containing package restoration, helper functions, etc.
 
 ```{r}
 # run the setup script
@@ -107,10 +48,7 @@ search()
 
 # 04 The here package
 
-The `here` package gets the root folder of your project; use this
-instead of absolute file locations. For example, do NOT use
-`source("c:\github\ERS2026\01-setup.R")`, as this will cause problems
-when collaborating on your project.
+The `here` package gets the root folder of your project; use this instead of absolute file locations. For example, do NOT use `source("c:\github\ERS2026\01-setup.R")`, as this will cause problems when collaborating on your project.
 
 ```{r}
 # show the root folder of your git-enabled project
@@ -119,16 +57,9 @@ here::here()
 
 # 05 Assignments, calculations, functions, vectors, lists, data frames
 
-## Assigning objects, and using functions from a core package.
-Objects are anything stored in R in memory that you can refer to by
-a name. Create objects through the assignment operator `<-`
-(variables).
-Functions in R perform calculations and are typically part of a
-package. R comes with a set of core packages installed with the
-default R installation — mainly `base`, `stats`, `utils`, `graphics`,
-`grDevices`, `methods`, and `datasets`. Functions in these core
-packages can be used without loading the package with `library()`;
-for example, `sum()` is in the `base` package.
+## Assigning objects, and using functions from a core package
+
+Objects are anything stored in R in memory that you can refer to by a name. Create objects through the assignment operator `<-` (variables). Functions in R perform calculations and are typically part of a package. R comes with a set of core packages installed with the default R installation — mainly `base`, `stats`, `utils`, `graphics`, `grDevices`, `methods`, and `datasets`. Functions in these core packages can be used without loading the package with `library()`; for example, `sum()` is in the `base` package.
 
 ```{r}
 # adds two numbers 
@@ -142,14 +73,16 @@ var1 + var2
 # use built-in function from a package
 sum(var1, var2)
 
-# objects can hold more than one value: create a vector with the c() function
-var3<-c(var1,var2)
-var3
-sum(var3)
+# Objects can hold more than one value. Vectors are data structures with more than one value, create them with the concatenate (c()) function
+days <- c(1, 2, 3, 4, 5, 6)
+days
+class(days)
+bodymass_g <- c(2, 3, 5, 7, 9, 11)
+base::plot(days, bodymass_g)
 
 # Note that the default for missing values is na.rm = FALSE, so if one of the values is NA, the result will be NA. You can change this by setting na.rm = TRUE.
-var4<-NA
-data<-c(var3, var4)
+var3<-NA
+data<-c(var1, var2, var3)
 data
 sum(data)
 sum(data, na.rm = TRUE)
@@ -161,18 +94,7 @@ base::sum(data, na.rm = TRUE)
 # function comes
 ```
 
-
-Objects can hold more than one value: create vectors.
-
-```{r}
-days <- c(1, 2, 3, 4, 5, 6)
-days
-class(days)
-bodymass_g <- c(2, 3, 5, 7, 9, 11)
-base::plot(days, bodymass_g)
-```
-
-Inspecting the code for a built-in function (from a core package).
+## Inspecting the code for a built-in function (from a core package)
 
 ```{r}
 a <- c(1, 2, 3)
@@ -186,9 +108,13 @@ base::append
 ?base::append()
 ```
 
-A named list is a collection of different objects, which can be of
-different types and lengths, such as text, numbers, or boolean
-variables. Create a named list with four elements.
+## Data types and data structures in R
+
+R has different data types, such as numeric, character, logical, factor and list. You can check the data type of an object with the `class()` function. Data can be organized in different data structures, such as vectors, matrices, data frames and lists. You can check the data structure of an object with the `str()` function.
+
+## Named lists
+
+A named list is a collection of different objects, which can be of different types and lengths, such as text, numbers, or boolean variables. Create a named list with four elements.
 
 ```{r}
 elephant_properties <- list(
@@ -197,15 +123,17 @@ elephant_properties <- list(
   is_endangered = TRUE,
   colors = c("gray", "white")
 )
+class(elephant_properties)
+# show the elements of the list
+names(elephant_properties)
+# inspect the contents of the elements
 elephant_properties
 
 # show only the weight
 elephant_properties$weight
 ```
 
-A data frame is a special type of named list with rows and columns
-(variables). In practice, we typically read a data frame from a
-file, rather than creating it ourselves in a script like this.
+A data frame is a special type of named list with rows and columns (variables). In practice, we typically read a data frame from a file, rather than creating it ourselves in a script like this.
 
 ```{r}
 students <- data.frame(
@@ -218,9 +146,7 @@ barplot(age ~ name, data = students)
 
 # 06 Using non-core package functions
 
-For functions from non-core packages, always specify
-`package::function(parameter1, parameter2)`, because the same
-function may exist in different packages.
+For functions from non-core packages, always specify `package::function(parameter1, parameter2)`, because the same function may exist in different packages.
 
 ```{r}
 #| eval: false
@@ -249,8 +175,7 @@ lubridate::floor_date(lubridate::dmy("29-Aug-2026"),
 
 # 07 Writing your own functions
 
-Your new function can use existing functions from packages — here
-the function `dmy()` is used from the lubridate package.
+Your new function can use existing functions from packages — here the function `dmy()` is used from the lubridate package.
 
 ```{r}
 # define the function days_between: the number of days between two dates
@@ -273,8 +198,7 @@ circle_area(5) # the function returns the area
 
 # 08 Datasets in packages
 
-Most packages contain especially functions, but sometimes also
-(example) datasets.
+Most packages contain especially functions, but sometimes also (example) datasets.
 
 ```{r}
 # list what the package dplyr contains
