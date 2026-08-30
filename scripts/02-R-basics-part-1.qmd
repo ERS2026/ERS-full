@@ -11,7 +11,7 @@ execute:
   message: false
 ---
 
-# Quarto scripts and R scripts
+# 01 Quarto scripts and R scripts
 
 R scripts are used to perform data analysis and visualization in R. Quarto is a publishing system that allows you to create documents, reports, and presentations in various formats. Quarto scripts can include R code chunks, which are executed when the document is rendered. Quarto scripts are also usefull for explaining to yourself or to others (as we will do in this course) how your R scripts work, or to document your analysis (why you make choices), and to document or interpret the output of analyses. Quarto scripts can be rendered to HTML, PDF, or Word documents, while R scripts are typically run in an interactive R session. Quarto scripts can also include text, images, and other media, while R scripts are primarily focused on code and output.
 Both quarto and R scripts are plain text files, and can be edited in any text editor. However, RStudio provides a user-friendly interface for working with both types of scripts, including syntax highlighting, code completion, and debugging tools. When the extension of a script is .r it is treated as an R script, and when the extension is .qmd it is treated as a Quarto script. In this course we will use Quarto scripts to teach R basics, and to provide additional context and information about different types of analysis. That is easier in quarto format than in an R script format.  For example this whole block of text is in a Quarto script, and not in an R script. It it would be R, this whole explanation would have been marked as a comment with a hash symbol (#) at the start of each line, and it would have been less readable.
