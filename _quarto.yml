@@ -1,7 +1,8 @@
 project:
   type: default
+  output-dir: preview
 
 format:
   html:
-    css: css/styles.css
+    css: ../css/styles.css
     code-overflow: wrap
