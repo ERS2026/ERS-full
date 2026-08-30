@@ -62,6 +62,7 @@ FactSeaLevel |>
                 ) |>
     dplyr::select(-Sealevel_cm) -> FactSealevel2
 FactSealevel2
+max(FactSealevel2$DateTime, na.rm = TRUE) # check the last date in the dataset
 ```
 
 # 03 Explore tidal level frequency
