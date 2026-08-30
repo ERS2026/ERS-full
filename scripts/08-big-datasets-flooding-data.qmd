@@ -1,0 +1,143 @@
+---
+title: "Big datasets: flooding probability"
+subtitle: "Calculate flooding probability at 1 cm resolution from the Schiermonnikoog ferry pier tidal gauge data"
+author: "Han Olff"
+date: "2025-9-14"
+editor_options: 
+  chunk_output_type: console
+execute:
+  output: false
+  warning: false
+  message: false
+---
+
+Data were collected at 10 minute intervals starting 1 January 2020 from the Rijkswaterstaat tidal gauge database `SchierTideDB`
+See the database in your browser: 
+https://docs.google.com/spreadsheets/d/1DOzvscotzWXm5MmEFrZhvPY820weEZVcSfUYz_5Gyf4
+**Warning:** this is a very large database (~2 million records). This
+script requires sufficient RAM (at least 16 Gb) and a good processor
+(like an i7) to run.
+
+# 01 Setup your environment
+
+Run the common setup script and synchronize the local project with
+GitHub.
+
+```{r}
+# Run the setup script containing package restoration, helper functions, etc.
+source(here::here("scripts", "01-setup.R"))
+
+# Pull changes from the online repository into this local project folder.
+# This is especially important when collaborating on the same project.
+system2("git", c("-C", here::here(), "pull"))
+
+# show which package namespaces are loaded to memory with library()
+search()
+
+# authenticate your @student.rug.nl google account
+gsheets_auth()
+```
+
+# 02 Read the datasets
+
+Calculate flooding probability from the Rijkswaterstaat tidal gauge
+data at the Schiermonnikoog pier, for the Schiermonnikoog tidal data
+1980-2025. For working with dates and times, see
+[R for Data Science: Dates and Times](https://r4ds.had.co.nz/dates-and-times.html).
+
+```{r}
+
+# Read Database ERS-Schier_tides (takes more than 10 minutes)
+read_gsdb("https://docs.google.com/spreadsheets/d/1DOzvscotzWXm5MmEFrZhvPY820weEZVcSfUYz_5Gyf4", 
+          sheets="FactSeaLevel", separate=TRUE)
+FactSeaLevel
+
+# Re-format the data for further use.
+FactSeaLevel |>
+  dplyr::mutate(
+    Sealevel_cm = ifelse(Sealevel_cm > 1000, NA, Sealevel_cm), # set missing or incorrect values to NA
+    Sealevel_m = Sealevel_cm / 100, # cm to m + NAP
+    Year = lubridate::year(DateTime),
+    Month = lubridate::month(DateTime)
+                ) |>
+    dplyr::select(-Sealevel_cm) -> FactSealevel2
+FactSealevel2
+```
+
+# 03 Explore tidal level frequency
+
+Show a histogram of tidal levels for summer of each of the last five
+years.
+
+```{r}
+FactSealevel2 |>
+  dplyr::filter(Month >= 4 & Month < 9 & Year %in% 2018:2025 & !is.na(Sealevel_m)) |>
+  ggplot(aes(x = Sealevel_m)) + # histogram of tidal heights during this period
+  geom_histogram(alpha = 0.5, fill = "blue", binwidth = 0.2) +
+  facet_wrap(~Year, nrow = 2) +
+  xlab("elevation (m to NAP)") +
+  ylab("number of times tide at this level")
+```
+
+# 04 Calculate the summer flooding probability
+
+Calculate the April-August flooding frequency of each tidal
+elevation, write the results to a file and import in the database `SchierTideDB` as a new table `FloodProb`. The flooding probability is the probability that a particular elevation is flooded at least once during the summer (April-August) of a particular year. The flooding probability is calculated as 1 minus the cumulative frequency of tides at or above that elevation, divided by the total number of tides in that summer.
+
+```{r}
+FactSealevel2 |>
+  dplyr::filter(Month >= 4 & Month < 8 & !is.na(Sealevel_m) & Year >= 1980) |>
+  group_by(Year, Sealevel_m) |>
+  summarize(Tides_n = n()) |>
+  mutate(
+    TransFreq = cumsum(Tides_n),
+    Summer_n = max(TransFreq),
+    TransProb = round((1 - TransFreq / Summer_n), 3) # transgression probability of each elevation in a year
+  ) -> FloodProb
+FloodProb
+
+# Write the result to a csv file. This file goes into the
+# `SchierTideDB` database and needs updating every year.
+
+readr::write_csv(FloodProb, here::here("preview", "tempdata", "transgres_freq.csv"))
+```
+
+# 05 Explore sea level rise
+
+Show how the summer flooding probability at a particular elevation changes over the years
+Before 1990 a different methods was used, so filter those years out
+
+```{r}
+FloodProb |>
+  dplyr::filter(Sealevel_m == 0.5, Year >= 1990) |> 
+  ggplot(aes(x = Year, y = TransProb)) +
+  geom_point(size = 3) +
+  geom_smooth() +
+  xlab("year") +
+  ylab("transgression probability of elevation") +
+  ggtitle("summer flooding probability at 0.5 m to NAP")
+```
+
+The analysis shows that in 2020,2021 and 2022 the salt marsh was exceptionally frequently flooded
+while in 2019 is was very little flooded in summer
+In general, variability seems to have been higher since 2019 than before
+
+
+Plot the summer flooding frequency across the elevational gradient,
+across all years.
+
+```{r}
+FloodProb |> dplyr::filter(Year >= 1990) |>
+  ggplot(aes(x = Sealevel_m, y = TransProb, col = factor(Year))) +
+  geom_line(linewidth = 1) +
+  xlab("elevation (m to NAP)") +
+  ylab("flooding probability of elevation")
+
+# plot the same for 2019-2026 only
+
+FloodProb |> dplyr::filter(Year %in% 2019:2026) |>
+  ggplot(aes(x = Sealevel_m, y = TransProb, col = factor(Year))) +
+  geom_line(linewidth = 1) +
+  xlab("elevation (m to NAP)") +
+  ylab("flooding probability of elevation")
+```
