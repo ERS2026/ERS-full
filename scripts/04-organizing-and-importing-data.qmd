@@ -35,12 +35,11 @@ gsheets_auth()
 
 # 02 Different ways to enter data
 
-Data can be imported in different ways in R:
+Data can be imported into R in different ways:
 
-1.  entering data directly in your script
-2.  reading data from a .csv or .xlsx file from your local computer or
-    online source
-3.  reading data from a published csv link in a Google Sheets database
+Method 1 — entering data directly in your script
+Method 2 — reading data from a local `.csv` or `.xlsx` file on your computer
+Method 3 — reading data from a published csv link to a Google Sheet
 
 We will mostly use the last method during this course. When reading
 data, we prefer the readr::read_csv() function, as it reads data
@@ -72,37 +71,69 @@ is a loose file, not a database. Also it is not a good idea to keep
 data outside the git folder, as then we are not sure we work on the
 same data.
 
-# 05 Method 3 - read data from an online database
+# 05 Method 3 - read data from  online databases
 
-This is the highly recommended choice of these three methods. In this
-case the data are in one online database, in our course mostly a
-Google Sheets database. This means that there is only one version of
-the data, and all collaborators read the same data. This is the
-preferred method for collaborative projects, and also for your own
-projects.
+This is the highly recommended choice of these three methods.
+This means that there is only one version of
+the data, and all collaborators read the same data. This is therefore
+preferred method for collaborative projects, especially when the data change
+ over time. The all team members always work with the up-to-date data.
 
-Google Sheets is a Spreadsheet app, similar to Microsoft Excel. But
-Google Sheets files "live" in the cloud associated with your Google
-account. A spreadsheet app is formally not a database app. But a
-Google Sheets document can be set up quite well as a 'lightweight'
-relational database. When done well according to a couple of clear
-principles (as described here), a handy feature is that Google Sheets
-can be set up to "publish" online tables (=sheets) as a .CSV (Comma
-Separated Values ascii text) file, that can be directly read into R.
-For this use in Google Sheets menu File/ Share / Publish to web,
-choose the sheet to publish and as type choose Comma-separated values.
-This produces a link, that you put in your R script to read that
-datafile. This comes with large benefits of managing the data in one
-place in a relational database. It is best practice to give the
-dataframe that you read in R the same name as the online table
-(sheet). In this way, data can be read on any computer, and multiple
-computers can read the same datafile. That is what you want in a
-collaborative project.
+Different online database options exist, ranging from a MySQL or
+PostgreSQL database on a server to a spreadsheet-based cloud
+database such as Google Sheets. This course uses Google Sheets
+because it is easy for a team to set up and access. It is flexible,
+but that flexibility is also a drawback — mistakes are easy to make,
+so it is important to structure and document the database clearly,
+as explained in the next sections.
+
+In research projects beyond this course, a dedicated
+PostgreSQL/PostGIS database on a server is often preferable: it
+enforces data quality more strictly and can run complex queries on
+the server rather than in the R script.
+
+Also for projects where you are the only one to work with the data,
+this is the preferred methods. It avoids the problem of having
+multiple versions of the same data on different computers. It also
+allows you to read the data directly into R, without the need to
+download and store a local copy of the data. This is especially
+important for large datasets, as it avoids the need to store large
+files on your computer. It also allows you to read the data directly
+into R, without the need to download and store a local copy of the
+data. 
+
+Google Sheets is a spreadsheet app, similar to Microsoft Excel, but its
+files "live" in the cloud, associated with your Google account.
+Although a spreadsheet app is formally not a database app, a Google
+Sheets document can be set up as a lightweight relational database
+when organized according to a few clear principles (as described
+here).
+
+A key feature is that you can read data in Google Sheets directly into R, 
+similar to using a database server.
+To do this, use the function read_gsdb() that you defined in the
+script 01-setup.r. This function reads in all tables (sheets) in a
+Google Sheets database and returns a named list object, where the
+elements of the object are different tibbles. You can then access
+each tibble using the $ operator, e.g.
+transdat$FactSectionAnimals.
+Authentication makes sure that you can set that only specific people
+can read the data, and that you can set who can edit the data. This
+is important for collaborative projects, where you want to allow
+some people to edit the data, but not others. It is also important
+to set the correct permissions for each table (sheet) in the
+database, as some tables may contain sensitive data that should not
+be shared with everyone.
+
+Reading data this way keeps all data management in one  (online) place: it's
+best practice to give the R dataframe the same name as the online
+sheet, so the same script can be run on any computer and all
+collaborators read identical data.
 
 # 06 Introduction example online database
 
-We explore this with this example database - open in your browser
-with crtl + click:
+We explore this with an example Google Sheets database. 
+Open in it in your browserwith crtl + click on the next link:
 https://docs.google.com/spreadsheets/d/1m-liu8omZMewqz_YP9j_YUmQ0zwATl3z4aRLnZFnfWc/edit?usp=sharing
 
 This is a Google Sheets database that only exists in one location in
