@@ -13,8 +13,8 @@ execute:
 
 # Quarto scripts and R scripts
 
-Quarto is a publishing system that allows you to create documents, reports, and presentations in various formats. R scripts are used to perform data analysis and visualization in R. Quarto scripts can include R code chunks, which are executed when the document is rendered. Quarto scripts are also usefull for explaining to yourself or to others (as we will do in this course) how your R scripts work. Quarto scripts can be rendered to HTML, PDF, or Word documents, while R scripts are typically run in an interactive R session. Quarto scripts can also include text, images, and other media, while R scripts are primarily focused on code and output.
-Both quarto and R scripts are plain text files, and can be edited in any text editor. However, RStudio provides a user-friendly interface for working with both types of scripts, including syntax highlighting, code completion, and debugging tools. When the extension of a script is .r it is treated as an R script, and when the extension is .qmd it is treated as a Quarto script. In this course we will use Quarto scripts to explain how R scripts work, and to provide additional context and information about the analysis.
+R scripts are used to perform data analysis and visualization in R. Quarto is a publishing system that allows you to create documents, reports, and presentations in various formats. Quarto scripts can include R code chunks, which are executed when the document is rendered. Quarto scripts are also usefull for explaining to yourself or to others (as we will do in this course) how your R scripts work, or to document your analysis (why you make choices), and to document or interpret the output of analyses. Quarto scripts can be rendered to HTML, PDF, or Word documents, while R scripts are typically run in an interactive R session. Quarto scripts can also include text, images, and other media, while R scripts are primarily focused on code and output.
+Both quarto and R scripts are plain text files, and can be edited in any text editor. However, RStudio provides a user-friendly interface for working with both types of scripts, including syntax highlighting, code completion, and debugging tools. When the extension of a script is .r it is treated as an R script, and when the extension is .qmd it is treated as a Quarto script. In this course we will use Quarto scripts to teach R basics, and to provide additional context and information about different types of analysis. That is easier in quarto format than in an R script format.  For example this whole block of text is in a Quarto script, and not in an R script. It it would be R, this whole explanation would have been marked as a comment with a hash symbol (#) at the start of each line, and it would have been less readable.
 
 # 02 Collapsing or expanding sections of your script, and using an outline of your script
 
@@ -40,21 +40,22 @@ Make sure that before you use `renv::restore()` on a Windows machine, you have R
 
 # 04 Setup your working environment
 
-Run the setup script, containing package restoration, helper functions, etc.
+It is a good idea to start the coding in each of your script with a setup section, where pull changes from your online repository (checking if your collaborators made changes) and where you load the packages that you will use in your script, and where you set the working directory to the root folder of your project. This ensures that your script can be run on any computer, and that it will work for all collaborators on the project. In this course, we will use a common setup script for all scripts in this course. This setup script is called `01-setup.R`, and is located in the `scripts` folder of this project. It contains package restoration, helper functions, etc.
 
 ```{r}
-# run the setup script
-source(here::here("scripts", "01-setup.R"))
-
 # pull the changes in the online repository to this local folder
 # this is important when you collaborate on the project
+# it updates all your scripts to the latest version, and ensures that you have the same versions of the scripts as your collaborators
 system2("git", c("-C", here::here(), "pull"))
 
-# show which package namespaces are loaded to memory with library()
+# Include the setup script with source(). This will run the code in the setup script, and load the packages and functions that are defined in this script and that we will lead later on in upcoming scripts that we use in this course.
+source(here::here("scripts", "01-setup.R"))
+
+# show which package namespaces are available to you to work with (loaded packages)
 search()
 ```
 
-# 05 The here package
+# 05 The 'here' package
 
 The `here` package gets the root folder of your project; use this instead of absolute file locations. For example, do NOT use `source("c:\github\ERS2026\01-setup.R")`, as this will cause problems when collaborating on your project.
 
