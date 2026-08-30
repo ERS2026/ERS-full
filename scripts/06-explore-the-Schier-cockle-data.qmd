@@ -33,6 +33,8 @@ gsheets_auth()
 
 # 02 Explore the input databases
 
+In this script we will work with two online databases, one containing cockle data and the other containing elevation data. We will combine these two databases to explore how the number and size of cockles changes along the transect with elevation.
+
 This example combines two online databases (quickly inspect them in your browser):
 1. the epibenthos database (cockle observations) 
 https://docs.google.com/spreadsheets/d/1E1vUWAHhse7fhjBf94Kiog3Rsj7IkMuFtP-BTQX2oI8

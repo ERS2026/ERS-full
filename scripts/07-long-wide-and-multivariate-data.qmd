@@ -135,21 +135,23 @@ ggsave(filename = here::here("figures/ERS2026-Script07", "ERS2026-Script07-Fig02
       units = "px", bg = "white")
 ```
 
+# 04 Plot change in cover along the elevation gradient
 
-# 04 Plot cover along the elevation gradient
-
-Load the elevation data from 2017-2023, select the variables `year`,
-`distance`, and `elevation_m`, and add the `elevation_m` variable to
-the `vdat3` vegetation data of 2017-2020.
-
-```{r}
-# TODO: load the elevation data and select year, distance, elevation_m
-```
-
-Join with the vegetation data.
+Load the elevation data from 2017-2023, select the variables `Year`,
+`TransectPoint_ID`, and `Elevation_m`, and add the `Elevation_m` variable to
+the `FactVegCov_long_ranked` vegetation data of 2017-2020.
 
 ```{r}
-# TODO: join the elevation data with the vegetation data
+# Load the elevation data
+read_gsdb("https://docs.google.com/spreadsheets/d/1UmpZoNIjo5lXdcpGKuBHe7wFX1Z3AQioeHjzrFgYnxo", sheets = "FactElevation", separate = TRUE) 
+
+# Select the required variables
+FactElevation |>
+  dplyr::select(Year, TransectPoint_ID, Elevation_m) -> FactElevation2
+
+# and join with the vegetation data
+FactVegCov_long_ranked |> 
+  dplyr::left_join(FactElevation2, by = c("Year", "TransectPoint_ID")) -> FactVegCov_long_ranked2
 ```
 
 Plot the change in cover along the elevation gradient, and over the
@@ -157,5 +159,17 @@ different years, as a heatmap for the 10 most abundant species (using
 ggplot), with a separate heatmap plot per species.
 
 ```{r}
-# TODO: plot a heatmap of cover along elevation and year, per species
+FactVegCov_long_ranked2 |> 
+  dplyr::filter(rank <= 10) |> 
+  ggplot(aes(x = Elevation_m, y = cover, fill=speciesname)) +
+  geom_area() +
+  labs(title = "Change in Cover of 10 Most Common Species Along the Transect Over Time",
+       x = "Elevation (m +NAP)",
+       y = "cover") +
+  facet_wrap(~Year)
+
+# save the plot to a png file
+ggsave(filename = here::here("figures/ERS2026-Script07", "ERS2026-Script07-Fig03.png"), 
+      width = 1920, height = 1200, 
+      units = "px", bg = "white")
 ```

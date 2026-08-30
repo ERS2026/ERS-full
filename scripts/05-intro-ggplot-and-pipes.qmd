@@ -46,7 +46,7 @@ What is length and thickness of a cockle? The length is the distance from the ti
 ![Cockle measurement](../images/cockle.png)
 
 
-## 03 Read the data table from the Google sheets database
+## 03 Read the cockle data  from the Google sheets database
 
 We again use the function read_gsdb() from our file 01-setup.R to read the data from the online database.
 ```{r}
