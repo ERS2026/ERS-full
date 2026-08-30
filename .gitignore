@@ -17,3 +17,6 @@
 
 # Quarto rendered output
 /preview
+
+# figures produced by scripts
+/figures

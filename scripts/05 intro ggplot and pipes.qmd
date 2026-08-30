@@ -58,9 +58,7 @@ names(FactCockleSize)  # show variable names
 str(FactCockleSize)    # show structure of the tibble
 
 # explore some aspects of the dataset
-# show all values for the variable length, possible like this
-FactCockleSize$Length_mm 
-# but this is better done like this with a pipe |>
+# show all values for the variable length, using the pipe operator |>
 FactCockleSize |> 
   dplyr::select(Length_mm)  # 
 
@@ -129,6 +127,10 @@ ggplot2::ggplot(data=FactCockleSize2,
   xlab("cockle length(mm)") +
   ylab("cockle width (mm)") +
   geom_smooth(method='lm')
+
+# as I like the figure, I will save it as png file, so I can use it in my report
+ggsave(filename = here::here("figures/script05", "fig01.png"), width = 12, height = 8, units = "cm", dpi = 300)
+
 ```
 
 Make a panel plot where with each year is shown as a separate graph
