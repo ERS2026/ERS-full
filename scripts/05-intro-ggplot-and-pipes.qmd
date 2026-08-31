@@ -8,6 +8,10 @@ editor:
     wrap: 72
 editor_options: 
   chunk_output_type: console
+execute:
+  output: false
+  warning: false
+  message: false
 ---
 
 # Intro to ggplot and pipes
