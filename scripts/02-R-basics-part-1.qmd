@@ -226,10 +226,16 @@ lubridate::floor_date(lubridate::dmy("5-Sep-2026"),
 )
 ```
 
-# 08 Writing your own functions
+# 08 Egg volume: writing your own functions
 
-Here is an example of a simple function that calculates the volume of an egg based on its length and maximum width. The function uses a nearly spherical approximation for turtle eggs while using the Hoyt approximation for bird eggs. 
+Eggs come in different shapes. Suppose you are doing in big comparative study on the egg volume produced by different species, as compared to their body size. This requires that you can easiliy calculate the volume of eggs from different species, based on their published relevant morphological characteristics. 
+![Egg length and maximum width](../images/eggs.png)
+
+For this you divide species into groups with different egg shapes. 
+Here is an example of a simple function that calculates the volume of an egg based on its length and maximum width. The function assumes uses a nearly spherical approximation for turtle eggs while using the Hoyt approximation for bird eggs. 
 When the function is called, it will dispatch to the appropriate method based on the class of the input object (either "bird_egg" or "turtle_egg"). The function returns the calculated volume of the egg in cubic centimeters (cm³).
+
+
 
 ```{r}
 # -------------------------------------------------------------------------------
