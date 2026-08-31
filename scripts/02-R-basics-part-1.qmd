@@ -5,10 +5,10 @@ author: "Han Olff"
 date: "2026-8-29"
 editor_options: 
   chunk_output_type: console
-execute:
-  output: false
-  warning: false
-  message: false
+#execute:
+#  output: false
+#  warning: false
+#  message: false
 ---
 
 # 01 Quarto scripts and R scripts
@@ -229,7 +229,9 @@ lubridate::floor_date(lubridate::dmy("5-Sep-2026"),
 # 08 Egg volume: writing your own functions
 
 Eggs come in different shapes. Suppose you are doing in big comparative study on the egg volume produced by different species, as compared to their body size. This requires that you can easiliy calculate the volume of eggs from different species, based on their published relevant morphological characteristics. 
+
 ![Egg length and maximum width](../images/eggs.png)
+source: https://en.wikipedia.org/wiki/Egg
 
 For this you divide species into groups with different egg shapes. 
 Here is an example of a simple function that calculates the volume of an egg based on its length and maximum width. The function assumes uses a nearly spherical approximation for turtle eggs while using the Hoyt approximation for bird eggs. 
@@ -292,6 +294,11 @@ ggplot2::ggplot(eggs2, aes(x = layingorder, y = egg_volume)) +
 # 09 Datasets in packages
 
 Most packages contain especially functions, but sometimes also (example) datasets.
+For example, dplyr contains a starwars dataset, which is a tibble containing information about characters from the Star Wars universe. You can access this dataset by calling `dplyr::starwars`. The dataset includes variables such as name, height, mass, hair color, skin color, eye color, birth year, gender, and species. You can use this dataset  to practice data manipulation and visualization techniques in R, as we will do in this course.
+
+![Star Wars characters](../images/starwars.png)
+source: https://mystarwarsthoughts.com/2021/01/22/my-five-favorite-aliens-in-star-wars/
+
 
 ```{r}
 # list what the package dplyr contains
