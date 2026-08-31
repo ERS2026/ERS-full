@@ -166,17 +166,27 @@ array1
 class(array1)
 str(array1)
 
-# 'named list'data structure for different types of data in one object
+# 'list' data structure for data of different classes in one object
 elephant_properties <- list(
+  "Elephant",
+  5400,
+  TRUE,
+  c("gray", "white")
+)
+elephant_properties
+class(elephant_properties)
+str(elephant_properties)
+
+# 'named list'data structure for data of different classes in one object
+elephant_properties2 <- list(
   name = "Elephant",
   weight = 5400,
   is_endangered = TRUE,
   colors = c("gray", "white")
 )
-elephant_properties
-class(elephant_properties)
-str(elephant_properties)
-names(elephant_properties)
+
+str(elephant_properties2)
+
 # show only the weight
 elephant_properties$weight
 
@@ -193,9 +203,8 @@ str(data_herbivores)
 
 # tibbles are a modern version of data frames, and are part of the tidyverse package. They have some advantages over data frames, such as better printing and subsetting. You can convert a data frame to a tibble with the `as_tibble()` function from the tibble package.
 tibble_herbivores <- tibble::as_tibble(data_herbivores)
-tibble_herbivores
-class(tibble_herbivores)
-str(tibble_herbivores)
+# printing the tibbles shows directly the variable classes, and the structure
+tibble_herbivores 
 ```
 
 
@@ -205,42 +214,74 @@ For functions from non-core packages, always specify `package::function(paramete
 We will use the function floor_date() from the lubridate package as an example. Lubridate is not a core package. This function rounds a date down to the nearest specified time unit (e.g., day, week, month, year). The lubridate package is part of the tidyverse, and is used for working with dates and times in R.
 
 ```{r}
-# show help on the lubridate package
+# show help on the lubridate package, including list of all its functions
 help(package = lubridate)
-
-# list the functions in the lubridate package
-ls("package:lubridate")
-
-# get help on the function floor_date from lubridate
+# get help on a specific function
 help("floor_date", package = "lubridate")
 
-# calculate the date of the monday of the same week of a date
-lubridate::floor_date(lubridate::dmy("29-Aug-2026"),
+# calculate the date of the previous monday any date
+lubridate::floor_date(lubridate::dmy("5-Sep-2026"),
   unit = "week",
-  week_start = 1
+  week_start = 1 # weeks start on monday
 )
 ```
 
 # 08 Writing your own functions
 
-Your new function can use existing functions from packages — here the function `dmy()` is used from the lubridate package.
+Here is an example of a simple function that calculates the volume of an egg based on its length and maximum width. The function uses a nearly spherical approximation for turtle eggs while using the Hoyt approximation for bird eggs. 
+When the function is called, it will dispatch to the appropriate method based on the class of the input object (either "bird_egg" or "turtle_egg"). The function returns the calculated volume of the egg in cubic centimeters (cm³).
 
 ```{r}
-# define the function days_between: the number of days between two dates
-days_between <- function(from, to) {
-  as.integer(lubridate::dmy(to) - lubridate::dmy(from))
-}
-# call the function to do a calculation
-days_between("1-Apr-2026", "31-Aug-2026")
+# -------------------------------------------------------------------------------
+# egg_volume()
+# Calculate egg volume for different types of eggs
+#
+# Parameter:
+#   x     an egg object
+#
+# Required contents of x depend on which method is dispatched:
+# so it depends on the class of x, which is either "bird_egg" or "turtle_egg"
+#   bird_egg:   x$length, x$max_width
+#   turtle_egg: x$max_width
+# -------------------------------------------------------------------------------
+library(units)
+# generic function
+egg_volume <- function(x) UseMethod("egg_volume")
+# bird egg method: Hoyt approximation 
+egg_volume.bird_egg <- function(x)    0.51 * x$length * x$max_width^2
+# turtle egg method: volume of a sphere
+egg_volume.turtle_egg <- function(x)  pi / 6 * x$max_width^3
 
-# Define a function that calculates the area of a circle.
-circle_area <- function(radius) { # radius is an argument of the function
-  area <- pi * radius^2 # calculate area as A = pi * r^2
-  return(area) # return the calculated value
-}
-# Call the function to do a calculation. 
-circle_area(5) # the function returns the area of a circle with radius 5
+egg1 <- list(max_width = units::set_units(4, cm))
+class(egg1) <- "turtle_egg"
+egg1
+egg_volume(egg1)
+
+# Give the tibble the class "bird_egg" (in addition to its usual
+# tibble/data.frame classes), so that egg_volume() dispatches to
+# egg_volume.bird_egg() defined above.
+eggs2 <- tibble::tibble(
+  layingorder = c(1, 2, 3,4),
+  length = c(5.8, 6.1, 5.5, 3.9),
+  max_width = c(4.6, 4.4, 4.0, 4.1)
+) |>
+  dplyr::mutate(
+    length = units::set_units(length, cm),
+    max_width = units::set_units(max_width, cm)
+  )
+class(eggs2) <- c("bird_egg", class(eggs2))
+eggs2
+str(eggs2)
+
+eggs2 <- eggs2 |>
+  mutate(egg_volume = egg_volume(eggs2))
+eggs2
+
+ggplot2::ggplot(eggs2, aes(x = layingorder, y = egg_volume)) +
+  geom_point(size=2) 
+
 ```
+
 
 # 09 Datasets in packages
 
