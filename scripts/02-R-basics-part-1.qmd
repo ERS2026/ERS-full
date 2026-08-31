@@ -5,10 +5,10 @@ author: "Han Olff"
 date: "2026-8-29"
 editor_options: 
   chunk_output_type: console
-#execute:
-#  output: false
-#  warning: false
-#  message: false
+execute:
+  output: true
+  warning: false
+  message: false
 ---
 
 # 01 Quarto scripts and R scripts
