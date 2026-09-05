@@ -27,7 +27,6 @@ FactVegClay |>
 # ----------------03 fit lm model with standardized (beta) estimates-------------------
 lm_fit <- lm(ClayDepth_cm ~ Elevation_m * Year, data = FactVegClay) |>
   lm.beta()
-
 broom::tidy(lm_fit)
 broom::glance(lm_fit)
 
