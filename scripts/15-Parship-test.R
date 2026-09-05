@@ -36,9 +36,17 @@ lm_fit <- lm_spec |>
 # standardized (beta) coefficients require lm.beta on the underlying
 # engine fit, since parsnip's "lm" engine has no standardized-coefficient option
 lm_fit_beta <- lm.beta::lm.beta(parsnip::extract_fit_engine(lm_fit))
+lm_fit_beta
 
 broom::tidy(lm_fit_beta)
 broom::glance(parsnip::extract_fit_engine(lm_fit))
+
+# plot the data with the fitted regression lines (one per year, since
+# the model includes an Elevation_m * Year interaction)
+FactVegClay |>
+  ggplot2::ggplot(aes(x = Elevation_m, y = ClayDepth_cm, color = factor(Year))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
 
 # ----------------04 logistic regression of Limonium vulgare occurrence-------------------
 # Limonium.vulgare is a presence/absence (0/1) variable, so we model it
