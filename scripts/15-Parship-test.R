@@ -26,10 +26,19 @@ FactVegClay |>
   geom_smooth(method = "lm", se = FALSE) 
 
 # ----------------03 fit lm model with standardized (beta) estimates-------------------
-lm_fit <- lm(ClayDepth_cm ~ Elevation_m * Year, data = FactVegClay) |>
-  lm.beta()
-broom::tidy(lm_fit)
-broom::glance(lm_fit)
+lm_spec <- parsnip::linear_reg() |>
+  parsnip::set_engine("lm") |>
+  parsnip::set_mode("regression")
+
+lm_fit <- lm_spec |>
+  parsnip::fit(ClayDepth_cm ~ Elevation_m * Year, data = FactVegClay)
+
+# standardized (beta) coefficients require lm.beta on the underlying
+# engine fit, since parsnip's "lm" engine has no standardized-coefficient option
+lm_fit_beta <- lm.beta::lm.beta(parsnip::extract_fit_engine(lm_fit))
+
+broom::tidy(lm_fit_beta)
+broom::glance(parsnip::extract_fit_engine(lm_fit))
 
 # ----------------04 logistic regression of Limonium vulgare occurrence-------------------
 # Limonium.vulgare is a presence/absence (0/1) variable, so we model it
@@ -48,6 +57,6 @@ broom::glance(parsnip::extract_fit_engine(glm_fit)) # pull out the underlying gl
 # plot the fitted logistic curve
 FactVegClay |>
   ggplot2::ggplot(aes(x = Elevation_m, y = Limonium.vulgare)) +
-  geom_point() +
+  geom_point(shape = "|") +
   geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE)
 
