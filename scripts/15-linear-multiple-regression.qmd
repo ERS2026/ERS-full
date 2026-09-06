@@ -67,47 +67,58 @@ The model is Elevation_m + Year + Elevation_m:Year, where Elevation_m:Year is th
 Note that this model can also be written als ClayDepth_cm ~ Elevation_m * Year, where the * operator indicates that both main effects and the interaction term should be included in the model.
 ```{r}
 FactVegClay |>
+  mutate(Elevation_m = Elevation_m/100) |> # scale elevation to 100 m units to make the coefficients more interpretable
   lm(ClayDepth_cm ~ Elevation_m + Year + Elevation_m:Year, data = _) -> lm_fit 
 
-# show the parameter estimates (coefficients) of the modeland their significance
-broom::tidy(lm_fit)
 # show the overall fit of the model (R-squared, F-statistic, etc.) 
 broom::glance(lm_fit)
-# check the variance inflation factors (VIFs) of the model to check for multicollinearity, meaning that the predictors are highly correlated with each other, which can lead to unstable estimates and inflated standard errors. A VIF above 5-10 is generally considered problematic.
+# show the parameter estimates (coefficients) of the modeland their significance
+broom::tidy(lm_fit)
+# check the variance inflation factors (VIFs) of the model to check for multicollinearity
 car::vif(lm_fit)
 ```
 
-Fitted model equation:
-
+This output show various things, and how to continue depends on our interest. 
+Four main aspects are relevant here:
+1) The overal fit of the model: The R-squared value indicates how much of the variance in the response variable (Claydepth) is explained by the model, 56% in this case. A higher R-squared value indicates a better fit.
+2) The significance of the model: The F-statistic and its associated p-value indicate whether the model is statistically significant, meaning that at least one of the predictors is significantly related to the response variable. In this case, the p-value is very small (p < 0.001), indicating that the model is statistically significant.
+3) The significance of the individual predictors: The coefficients table shows the estimated effect of each predictor on the response variable, along with their standard errors, t-values, and p-values. In this case, all three predictors (Elevation_m, Year, and the interaction term) are statistically significant (p < 0.001), indicating that they are all significantly explain variation in clay depth.
+4) Using the model to make predictions: the fitted model equation can be used to make predictions about clay depth for given values of Elevation_m and Year. The fitted model equation in which values for Elevation_m and Year can be plugged in to predict ClayDepth_cm is:
 $$
 \text{ClayDepth\_cm} = 4821.64 - 5091.16 \times \text{Elevation\_m} - 2.40 \times \text{Year} + 2.53 \times \text{Elevation\_m} \times \text{Year}
 $$
-
 where `Elevation_m` and `Year` are the original (uncentered) variables.
+For example, for a point at 1.5 m elevation in 2010, the predicted clay depth is:
+$$
+\text{ClayDepth\_cm} = 4821.64 - 5091.16 \times 1.5 - 2.40 \times 2010 + 2.53 \times 1.5 \times 2010 = 4821.64 - 7636.74 - 4824 + 7615.95 = 976.85 \text{ cm}
+$$
+5) Assess the relative importance of the different predictors; does elevation have a greater impact on clay depth than year? And how relatively important is the interaction term compared to the main effects? At first glace we might think that elevation (coefficient 5091) has much more impact than year (coefficient 2.40), and that the interaction term (coefficient 2.53) has about the same impact as year. But these cannot be compared between variables because the coefficients of this model are dependent of the measurement scale of the variables; they are "scale-dependent". The coefficient of 5091 for elevation means that for every 1 meter increase in elevation, the clay depth decreases by 5091 cm, holding all other predictors constant. So if we would not have expressed elevation in meters, but in centimeters, the coefficient of that elevation in the model would become 100 times larger, but of course not its relative importance relative to year. To compare coefficients between variables, we should look calculate their standardized coefficients (beta weights) from the model. These represent the change in the response variable (claydepth) for a one-standard-deviation change in each predictor, holding all other predictors constant. 
+We can obtain these standardized coefficients by centering the predictors (subtracting the mean from each value) before fitting the model, and then using the `lm.beta()` function to obtain the standardized coefficients. We do this in the next section.
+While doing this, we address an additional problem here: the interaction term between elevation and year is highly correlated with the main effects, which can lead to multicollinearity and unstable estimates. This is shown by the high value of the variance inflation factor (VIF) of 622927 for the interaction term, while a VIF of 1-5 is considered still ok. To address this, we will center the predictors before fitting the model in the next section.
 
 
-**However**: `Elevation_m` and the interaction term are severely collinear here (variance inflation factors — VIFs — in the hundreds of thousands). This is because `Year` has a very different scale from `Elevation_m`.
- The interaction term is also affected by the scale difference, leading to inflated VIFs. The model is not centered, so these individual coefficients are numerically unstable and the coefficients of the model are not reliable. For the centered version with stable, interpretable estimates, see the next section.
+# 04 Fit an lm model with standardized (beta) estimates to assess their relative importance
 
-# 05 Fit lm model with standardized (beta) estimates
+We will first center  `Elevation_m` and `Year` before fitting, based on the high VIFs calculated. This means that the mean of all elevations is subtracted from each elevation value, and the mean of all years is subtracted from each year value. This centers the data around zero, making the interpretation of the intercept more meaningful and reducing multicollinearity between the main effects and the interaction term. With an interaction term, leaving either predictor uncentered creates severe collinearity between the main effect and the interaction (inflated/misleading coefficients). These original calculated coeffisients are statistically unstable, meaning that a leaving a few observations out of the dataset or including some more would strongly change the value of the coefficients. Centering the predictors reduces this collinearity and stabilizes the coefficients, making them more interpretable.
 
-Center `Elevation_m` and `Year` before fitting. With an interaction term, leaving either predictor uncentered creates severe collinearity between the main effect and the interaction (inflated/misleading coefficients), so both predictors must be centered for stable, interpretable estimates.
-
-Fit the unstandardized model and the standardized (beta) version in one pipe: `lm.beta()` adds `standardized.coefficients` on top of the lm object, so `lm_fit_beta` still works anywhere `lm_fit` (an "lm") would, e.g. `predict()`.
+So we will fit a single model on the centered (but not SD-scaled) predictors, then compute standardized coefficients from that same fit: `lm.beta()` takes the fitted `lm` object and adds a `standardized.coefficients` element to it, rather than requiring a separate refit on rescaled data. So `lm_fit_beta` is not a different model from `lm_fit` above — it *is* the centered `lm` fit, just with standardized coefficients attached, and it still works anywhere an `lm` object would (e.g. when used in `predict()`).
 
 ```{r}
 FactVegClay |>
+  # center year and elevation
   mutate(
     Elevation_m_c = Elevation_m - mean(Elevation_m),
     Year_c = Year - mean(Year)
   ) |>
+  # calculate the multiple regression model with interaction term
   lm(ClayDepth_cm ~ Elevation_m_c * Year_c, data = _) |>
+  # calculate the 
   lm.beta::lm.beta() -> lm_fit_beta
 
+# inspect the standardized coefficients
 broom::tidy(lm_fit_beta)
+# inspect the overall fit of the model (R-squared, F-statistic, etc.)
 broom::glance(lm_fit_beta)
-car::vif(lm_fit_beta)
-str(lm_fit_beta)
 ```
 
 ```{r}
