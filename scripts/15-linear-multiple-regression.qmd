@@ -40,7 +40,8 @@ FactVegClay
 Explore the relation between clay depth and elevation, coloring points by year , and a linear regression line showing how overall ClayDepth_cm changes over with elevation (irrespective of year).
 
 ```{r}
-FactVegClay |>
+FactVegClay |> 
+  dplyr::filter(Year<=2023) |>
   ggplot2::ggplot(aes(x = Elevation_m, y = ClayDepth_cm)) +
   geom_point(aes(color = factor(Year))) +
   geom_smooth(method = "lm", se = FALSE)
@@ -52,6 +53,7 @@ But first also explore the relation between clay depth and year, coloring points
 
 ```{r}
 FactVegClay |>
+    dplyr::filter(Year<=2023) |>
   ggplot2::ggplot(aes(x = Year, y = ClayDepth_cm)) +
   geom_point(aes(color = Elevation_m)) +
   geom_smooth(method = "lm", se = FALSE) +
@@ -67,8 +69,16 @@ The model is Elevation_m + Year + Elevation_m:Year, where Elevation_m:Year is th
 Note that this model can also be written als ClayDepth_cm ~ Elevation_m * Year, where the * operator indicates that both main effects and the interaction term should be included in the model.
 ```{r}
 FactVegClay |>
+    dplyr::filter(Year<=2023) |>
   mutate(Elevation_m = Elevation_m/100) |> # scale elevation to 100 m units to make the coefficients more interpretable
   lm(ClayDepth_cm ~ Elevation_m + Year + Elevation_m:Year, data = _) -> lm_fit 
+# show q-q plot of the residuals to check for normal distribution of residuals, a model assumption of linear regression
+broom::augment(lm_fit) |>
+  ggplot2::ggplot(aes(sample = .resid)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(x = "Theoretical quantiles", y = "Sample quantiles") +
+  theme_bw()
 
 # show the overall fit of the model (R-squared, F-statistic, etc.) 
 broom::glance(lm_fit)
@@ -80,10 +90,10 @@ car::vif(lm_fit)
 
 This output show various things, and how to continue depends on our interest. 
 Four main aspects are relevant here:
--1) The overal fit of the model: The R-squared value indicates how much of the variance in the response variable (Claydepth) is explained by the model, 56% in this case. A higher R-squared value indicates a better fit.
--2) The significance of the model: The F-statistic and its associated p-value indicate whether the model is statistically significant, meaning that at least one of the predictors is significantly related to the response variable. In this case, the p-value is very small (p < 0.001), indicating that the model is statistically significant.
--3) The significance of the individual predictors: The coefficients table shows the estimated effect of each predictor on the response variable, along with their standard errors, t-values, and p-values. In this case, all three predictors (Elevation_m, Year, and the interaction term) are statistically significant (p < 0.001), indicating that they are all significantly explain variation in clay depth.
--4) Using the model to make predictions: the fitted model equation can be used to make predictions about clay depth for given values of Elevation_m and Year. The fitted model equation in which values for Elevation_m and Year can be plugged in to predict ClayDepth_cm is:
+1. The overal fit of the model: The R-squared value indicates how much of the variance in the response variable (Claydepth) is explained by the model, 56% in this case. A higher R-squared value indicates a better fit.
+- The significance of the model: The F-statistic and its associated p-value indicate whether the model is statistically significant, meaning that at least one of the predictors is significantly related to the response variable. In this case, the p-value is very small (p < 0.001), indicating that the model is statistically significant.
+2. The significance of the individual predictors: The coefficients table shows the estimated effect of each predictor on the response variable, along with their standard errors, t-values, and p-values. In this case, all three predictors (Elevation_m, Year, and the interaction term) are statistically significant (p < 0.001), indicating that they are all significantly explain variation in clay depth.
+3. Using the model to make predictions: the fitted model equation can be used to make predictions about clay depth for given values of Elevation_m and Year. The fitted model equation in which values for Elevation_m and Year can be plugged in to predict ClayDepth_cm is:
 $$
 \text{ClayDepth\_cm} = 4821.64 - 5091.16 \times \text{Elevation\_m} - 2.40 \times \text{Year} + 2.53 \times \text{Elevation\_m} \times \text{Year}
 $$
@@ -92,7 +102,7 @@ For example, for a point at 1.5 m elevation in 2010, the predicted clay depth is
 $$
 \text{ClayDepth\_cm} = 4821.64 - 5091.16 \times 1.5 - 2.40 \times 2010 + 2.53 \times 1.5 \times 2010 = 4821.64 - 7636.74 - 4824 + 7615.95 = 976.85 \text{ cm}
 $$
--5) Assess the relative importance of the different predictors; does elevation have a greater impact on clay depth than year? And how relatively important is the interaction term compared to the main effects? At first glace we might think that elevation (coefficient 5091) has much more impact than year (coefficient 2.40), and that the interaction term (coefficient 2.53) has about the same impact as year. But these cannot be compared between variables because the coefficients of this model are dependent of the measurement scale of the variables; they are "scale-dependent". The coefficient of 5091 for elevation means that for every 1 meter increase in elevation, the clay depth decreases by 5091 cm, holding all other predictors constant. So if we would not have expressed elevation in meters, but in centimeters, the coefficient of that elevation in the model would become 100 times larger, but of course not its relative importance relative to year. To compare coefficients between variables, we should look calculate their standardized coefficients (beta weights) from the model. These represent the change in the response variable (claydepth) for a one-standard-deviation change in each predictor, holding all other predictors constant. 
+4. Assess the relative importance of the different predictors; does elevation have a greater impact on clay depth than year? And how relatively important is the interaction term compared to the main effects? At first glace we might think that elevation (coefficient 5091) has much more impact than year (coefficient 2.40), and that the interaction term (coefficient 2.53) has about the same impact as year. But these cannot be compared between variables because the coefficients of this model are dependent of the measurement scale of the variables; they are "scale-dependent". The coefficient of 5091 for elevation means that for every 1 meter increase in elevation, the clay depth decreases by 5091 cm, holding all other predictors constant. So if we would not have expressed elevation in meters, but in centimeters, the coefficient of that elevation in the model would become 100 times larger, but of course not its relative importance relative to year. To compare coefficients between variables, we should look calculate their standardized coefficients (beta weights) from the model. These represent the change in the response variable (claydepth) for a one-standard-deviation change in each predictor, holding all other predictors constant. 
 We can obtain these standardized coefficients by centering the predictors (subtracting the mean from each value) before fitting the model, and then using the `lm.beta()` function to obtain the standardized coefficients. We do this in the next section.
 While doing this, we address an additional problem here: the interaction term between elevation and year is highly correlated with the main effects, which can lead to multicollinearity and unstable estimates. This is shown by the high value of the variance inflation factor (VIF) of 622927 for the interaction term, while a VIF of 1-5 is considered still ok. To address this, we will center the predictors before fitting the model in the next section.
 
@@ -105,6 +115,7 @@ So we will fit a single model on the centered (but not SD-scaled) predictors, th
 
 ```{r}
 FactVegClay |>
+    dplyr::filter(Year<=2023) |>
   # center year and elevation
   mutate(
     Elevation_m_c = Elevation_m - mean(Elevation_m),
@@ -129,6 +140,7 @@ A naive way of proceeding would be to plot the model in ggplot for elevation ver
 
 ```{r}
 FactVegClay |>
+    dplyr::filter(Year<=2023) |>
   # lm_fit_beta$fitted.values are the unstandardized fitted values from
   # the underlying lm fit
   ggplot2::ggplot(aes(x = Elevation_m, y = ClayDepth_cm, color = factor(Year))) +
@@ -143,6 +155,7 @@ But note that we are not the  model here that we just fitted. Instead we calcula
 ```{r}
 # plot the model with the fitted values from the centered lm fit
 FactVegClay |>
+    dplyr::filter(Year<=2023) |>
   ggplot2::ggplot(aes(x = Elevation_m, y = ClayDepth_cm, color = factor(Year))) +
   geom_point() +
   geom_line(aes(y = lm_fit_beta$fitted.values), linewidth = 1) +
@@ -172,6 +185,7 @@ We considered adding an AR(1) residual correlation structure across years within
 library(glmmTMB)
 
 FactVegClay_glmm <- FactVegClay |>
+    dplyr::filter(Year<=2023) |>
   mutate(
     Elevation_m_c = Elevation_m - mean(Elevation_m),
     Year_c = Year - mean(Year),
@@ -184,7 +198,7 @@ glmm_fit_ar1 <- glmmTMB(
     (Elevation_m_c || Point_ID) +
     ar1(Year_f + 0 | Point_ID),
   family = gaussian("identity"),
-  data = FactVegClay_glmm
+  data = FactVegClay_glmm  |> dplyr::filter(Year<=2023) |>
 )
 summary(glmm_fit_ar1)
 # But this does not converge reliably
@@ -195,7 +209,7 @@ summary(glmm_fit_ar1)
 glmm_fit_corr <- glmmTMB(
   ClayDepth_cm ~ Elevation_m_c * Year_c + (Elevation_m_c | Point_ID),
   family = gaussian("identity"),
-  data = FactVegClay_glmm
+  data = FactVegClay_glmm |> dplyr::filter(Year<=2023
 )
 broom::tidy(lm_fit_beta)
 broom::glance(lm_fit_beta)
@@ -205,7 +219,7 @@ broom::glance(lm_fit_beta)
 glmm_fit <- glmmTMB(
   ClayDepth_cm ~ Elevation_m_c * Year_c + (Elevation_m_c || Point_ID),
   family = gaussian("identity"),
-  data = FactVegClay_glmm
+  data = FactVegClay_glmm |> dplyr::filter(Year<=2023
 )
 broom::tidy(lm_fit_beta)
 broom::glance(lm_fit_beta)
@@ -219,6 +233,3 @@ summary(glmm_fit)
 
 Conclusion: repeated measures on the 71 transect points across 9 years mean observations aren't independent, so a plain `lm()` understates uncertainty. Three `glmmTMB` mixed models were compared: a random-slope-plus-AR(1) model (`glmm_fit_ar1`) failed to converge reliably (non-positive-definite Hessian, residual variance collapsing toward zero) since the data can't identify both a per-point slope covariance structure and a separate AR(1) term simultaneously. Of the two remaining models — with and without a correlation between the per-point random intercept and slope — a likelihood-ratio test found the correlation didn't significantly improve fit, so the simpler uncorrelated model (`glmm_fit`) was preferred. Its fixed-effect estimates (elevation ≈ 24.6, year ≈ 0.48, interaction ≈ 2.5, all significant) closely match the earlier `lm_fit_beta` estimates, but the standard errors here properly account for the repeated-measures structure rather than treating all 639 rows as independent.
 
-# 07 Logistic regression of Limonium vulgare occurrence
-
-`Limonium.vulgare` is a presence/absence (0/1) variable, so we model it with a binomial (logistic) glmmTMB model against elevation.
