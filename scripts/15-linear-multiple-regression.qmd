@@ -80,10 +80,10 @@ car::vif(lm_fit)
 
 This output show various things, and how to continue depends on our interest. 
 Four main aspects are relevant here:
-1) The overal fit of the model: The R-squared value indicates how much of the variance in the response variable (Claydepth) is explained by the model, 56% in this case. A higher R-squared value indicates a better fit.
-2) The significance of the model: The F-statistic and its associated p-value indicate whether the model is statistically significant, meaning that at least one of the predictors is significantly related to the response variable. In this case, the p-value is very small (p < 0.001), indicating that the model is statistically significant.
-3) The significance of the individual predictors: The coefficients table shows the estimated effect of each predictor on the response variable, along with their standard errors, t-values, and p-values. In this case, all three predictors (Elevation_m, Year, and the interaction term) are statistically significant (p < 0.001), indicating that they are all significantly explain variation in clay depth.
-4) Using the model to make predictions: the fitted model equation can be used to make predictions about clay depth for given values of Elevation_m and Year. The fitted model equation in which values for Elevation_m and Year can be plugged in to predict ClayDepth_cm is:
+-1) The overal fit of the model: The R-squared value indicates how much of the variance in the response variable (Claydepth) is explained by the model, 56% in this case. A higher R-squared value indicates a better fit.
+-2) The significance of the model: The F-statistic and its associated p-value indicate whether the model is statistically significant, meaning that at least one of the predictors is significantly related to the response variable. In this case, the p-value is very small (p < 0.001), indicating that the model is statistically significant.
+-3) The significance of the individual predictors: The coefficients table shows the estimated effect of each predictor on the response variable, along with their standard errors, t-values, and p-values. In this case, all three predictors (Elevation_m, Year, and the interaction term) are statistically significant (p < 0.001), indicating that they are all significantly explain variation in clay depth.
+-4) Using the model to make predictions: the fitted model equation can be used to make predictions about clay depth for given values of Elevation_m and Year. The fitted model equation in which values for Elevation_m and Year can be plugged in to predict ClayDepth_cm is:
 $$
 \text{ClayDepth\_cm} = 4821.64 - 5091.16 \times \text{Elevation\_m} - 2.40 \times \text{Year} + 2.53 \times \text{Elevation\_m} \times \text{Year}
 $$
@@ -92,7 +92,7 @@ For example, for a point at 1.5 m elevation in 2010, the predicted clay depth is
 $$
 \text{ClayDepth\_cm} = 4821.64 - 5091.16 \times 1.5 - 2.40 \times 2010 + 2.53 \times 1.5 \times 2010 = 4821.64 - 7636.74 - 4824 + 7615.95 = 976.85 \text{ cm}
 $$
-5) Assess the relative importance of the different predictors; does elevation have a greater impact on clay depth than year? And how relatively important is the interaction term compared to the main effects? At first glace we might think that elevation (coefficient 5091) has much more impact than year (coefficient 2.40), and that the interaction term (coefficient 2.53) has about the same impact as year. But these cannot be compared between variables because the coefficients of this model are dependent of the measurement scale of the variables; they are "scale-dependent". The coefficient of 5091 for elevation means that for every 1 meter increase in elevation, the clay depth decreases by 5091 cm, holding all other predictors constant. So if we would not have expressed elevation in meters, but in centimeters, the coefficient of that elevation in the model would become 100 times larger, but of course not its relative importance relative to year. To compare coefficients between variables, we should look calculate their standardized coefficients (beta weights) from the model. These represent the change in the response variable (claydepth) for a one-standard-deviation change in each predictor, holding all other predictors constant. 
+-5) Assess the relative importance of the different predictors; does elevation have a greater impact on clay depth than year? And how relatively important is the interaction term compared to the main effects? At first glace we might think that elevation (coefficient 5091) has much more impact than year (coefficient 2.40), and that the interaction term (coefficient 2.53) has about the same impact as year. But these cannot be compared between variables because the coefficients of this model are dependent of the measurement scale of the variables; they are "scale-dependent". The coefficient of 5091 for elevation means that for every 1 meter increase in elevation, the clay depth decreases by 5091 cm, holding all other predictors constant. So if we would not have expressed elevation in meters, but in centimeters, the coefficient of that elevation in the model would become 100 times larger, but of course not its relative importance relative to year. To compare coefficients between variables, we should look calculate their standardized coefficients (beta weights) from the model. These represent the change in the response variable (claydepth) for a one-standard-deviation change in each predictor, holding all other predictors constant. 
 We can obtain these standardized coefficients by centering the predictors (subtracting the mean from each value) before fitting the model, and then using the `lm.beta()` function to obtain the standardized coefficients. We do this in the next section.
 While doing this, we address an additional problem here: the interaction term between elevation and year is highly correlated with the main effects, which can lead to multicollinearity and unstable estimates. This is shown by the high value of the variance inflation factor (VIF) of 622927 for the interaction term, while a VIF of 1-5 is considered still ok. To address this, we will center the predictors before fitting the model in the next section.
 
@@ -121,18 +121,11 @@ broom::tidy(lm_fit_beta)
 broom::glance(lm_fit_beta)
 ```
 
-```{r}
-FactVegClay |>
-  ggplot2::ggplot(aes(x = Elevation_m, y = ClayDepth_cm, color = factor(Year))) +
-  geom_point() +
-  geom_line(aes(y = lm_fit_beta$fitted.values), linewidth = 1) +
-  labs(x = "Elevation (m)", y = "Clay depth (cm)", color = "Year") +
-  theme_bw()
-```
+Interpretation: standardized coefficients are ~0.56 for elevation and ~0.50 for year, indicating comparably strong associations with clay depth (in SD units) when each predictor is considered at the mean of the other. The interaction is much smaller (~0.15), suggesting the elevation-clay depth relationship changes only modestly across years, though it is still statistically significant (see p-value above). Note that standardizing the variables is especially important for their parameter estimate and standard error of that estimate, not so much for their significance (p-value) or overall model fit (R-squared). The p-values and R-squared are the same for the centered and uncentered models, but the coefficients are more interpretable when standardized.
 
-Interpretation: standardized coefficients are ~0.56 for elevation and ~0.50 for year, indicating comparably strong associations with clay depth (in SD units) when each predictor is considered at the mean of the other. The interaction is much smaller (~0.15), suggesting the elevation-clay depth relationship changes only modestly across years, though it is still statistically significant (see p-value above).
+# 05 plot the fitted model 
 
-Check the difference if we would have used `geom_smooth()` with `lm` — this calculates a new lm fit for each year, so the results differ from the interaction model.
+A naive way of proceeding would be to plot the model in ggplot for elevation versus clay-depths, with geom_smooth(method = "lm") combined year as a color aesthetic in the aes(). Shows that the effect of elevation is different for different years, sugggesting the interaction that we found in the model. 
 
 ```{r}
 FactVegClay |>
@@ -144,6 +137,30 @@ FactVegClay |>
   labs(x = "Elevation (m)", y = "Clay depth (cm)", color = "Year") +
   theme_bw()
 ```
+
+But note that we are not the  model here that we just fitted. Instead we calculate here  a separate lm fit for each year! It does not accomodate year as having a linear effect on claydepth, as we tested in our model. To plot the fitted values from our model, we can use geom_line() with the fitted values from the centered lm fit `lm_fit_beta$fitted.values`. This works again because of row-order correspondence, not because the model is somehow evaluating uncentered predictors. `lm_fit_beta$fitted.values` is a vector of the already-computed fitted values from fitting on the centered data — one number per row of the training data `FactVegClay`, in the same row order.
+
+```{r}
+# plot the model with the fitted values from the centered lm fit
+FactVegClay |>
+  ggplot2::ggplot(aes(x = Elevation_m, y = ClayDepth_cm, color = factor(Year))) +
+  geom_point() +
+  geom_line(aes(y = lm_fit_beta$fitted.values), linewidth = 1) +
+  labs(x = "Elevation (m)", y = "Clay depth (cm)", color = "Year") +
+  theme_bw()
+
+# predict clay depth at 1.05 m and 1.2 m elevation in 2017  and year 2025
+predict(
+  lm_fit_beta,
+  newdata = data.frame(
+    Elevation_m_c = c(1.05 - mean(FactVegClay$Elevation_m), 1.2 - mean(FactVegClay$Elevation_m)),
+    Year_c = c(2017 - mean(FactVegClay$Year), 2025 - mean(FactVegClay$Year)),
+    row.names = c("1.05", "1.2")
+  )
+)
+```
+
+Our final interpretation of the analysis is that sedimentation rate (increase in clay depth over time) is higher at higher elevations than at lower elevations. At 1.05 m elevation, clay depth increased by  0.97 cm over 8 years, while at 1.2 m elevation, clay depth increased  8.30 cm over the same period. This suggests that at low elevation some factor is inhibiting the sedimentation. This may be the sparse vegetation due to permanent water logging, leading to anoxia and high sulfide concentrations, and possibly also removal of sediment with microbial mats that dry up and are washed away. 
 
 # 06 Accounting for repeated measures on the same transect points
 
