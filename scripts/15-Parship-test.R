@@ -50,21 +50,6 @@ FactVegClay |>
 
 # ----------------04 logistic regression of Limonium vulgare occurrence-------------------
 # Limonium.vulgare is a presence/absence (0/1) variable, so we model it
-# with a binomial (logistic) GLM against elevation.
+# with a binomial (logistic) glmmTMB model against elevation.
 
-glm_spec <- parsnip::logistic_reg() |>
-  parsnip::set_engine("glm") |>
-  parsnip::set_mode("classification")
-
-glm_fit <- glm_spec |>
-  parsnip::fit(factor(Limonium.vulgare) ~ Elevation_m, data = FactVegClay)
-
-broom::tidy(glm_fit)
-broom::glance(parsnip::extract_fit_engine(glm_fit)) # pull out the underlying glm object and glance at it
-
-# plot the fitted logistic curve
-FactVegClay |>
-  ggplot2::ggplot(aes(x = Elevation_m, y = Limonium.vulgare)) +
-  geom_point(shape = "|") +
-  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE)
 
