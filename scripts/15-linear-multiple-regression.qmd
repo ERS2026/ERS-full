@@ -24,6 +24,9 @@ source(here::here("scripts", "01-setup.R"))
 
 # load required libraries for this script
 library(lm.beta)
+
+#authenticate with Google Drive to read the dataset from the Google Sheet
+googledrive::drive_auth()
 ```
 
 # 02 Read and explore the dataset
