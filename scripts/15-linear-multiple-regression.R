@@ -9,7 +9,6 @@ source(here::here("scripts", "01-setup.R"))
 
 # load required libraries for this script
 library(lm.beta)
-library(tidymodels)
 
 
 # -----------------02 read and explore the dataset --------------------
