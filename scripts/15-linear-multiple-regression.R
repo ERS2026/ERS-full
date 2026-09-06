@@ -31,7 +31,25 @@ FactVegClay |>
   scale_color_steps2(low = "blue", mid = "yellow", high = "red", 
                      midpoint = mean(FactVegClay$Elevation_m), n.breaks = 8)
 
-# ----------------04 fit lm model with standardized (beta) estimates-------------------
+# ----------------03 fit lm model with interaction term-------------------
+FactVegClay |>
+  lm(ClayDepth_cm ~ Elevation_m * Year, data = _) -> lm_fit 
+
+broom::tidy(lm_fit)
+broom::glance(lm_fit)
+car::vif(lm_fit)
+
+# Fitted model equation:
+# ClayDepth_cm = 4821.64 - 5091.16 * Elevation_m - 2.40 * Year
+#                + 2.53 * Elevation_m * Year
+# where Elevation_m and Year are the original (uncentered) variables.
+# Note: Elevation_m and the interaction term are severely collinear here
+# (variance inflation factors - VIFs - in the hundreds of thousands) because 
+# Year is not centered, so these individual coefficients are numerically unstable 
+# and the coefficients of the model are not reliable.
+# For the centered version with stable, interpretable estimates, see next section.
+
+# ----------------05 fit lm model with standardized (beta) estimates-------------------
 # Center Elevation_m and Year before fitting. With an interaction term,
 # leaving either predictor uncentered creates severe collinearity between
 # the main effect and the interaction (inflated/misleading coefficients),
@@ -39,38 +57,31 @@ FactVegClay |>
 # Fit the unstandardized model and the standardized (beta) version in one
 # pipe: lm.beta() adds standardized.coefficients on top of the lm object,
 # so lm_fit_beta still works anywhere lm_fit (an "lm") would, e.g. predict().
-lm_fit_beta <- FactVegClay |>
+FactVegClay |>
   mutate(
     Elevation_m_c = Elevation_m - mean(Elevation_m),
     Year_c = Year - mean(Year)
   ) |>
   lm(ClayDepth_cm ~ Elevation_m_c * Year_c, data = _) |>
-  lm.beta::lm.beta()
+  lm.beta::lm.beta() -> lm_fit_beta
 
 broom::tidy(lm_fit_beta)
 broom::glance(lm_fit_beta)
+str(lm_fit_beta)
 
-# Fitted model equation (unstandardized coefficients):
-# ClayDepth_cm = 4.13 + 24.8 * Elevation_m_c + 0.476 * Year_c
-#                + 2.53 * Elevation_m_c * Year_c
-# where Elevation_m_c and Year_c are Elevation_m and Year centered on
-# their sample means.
 
+FactVegClay |>
+  ggplot2::ggplot(aes(x = Elevation_m, y = ClayDepth_cm, color = factor(Year))) +
+  geom_point() +
+  geom_line(aes(y = lm_fit_beta$fitted.values), linewidth = 1) +
+  labs(x = "Elevation (m)", y = "Clay depth (cm)", color = "Year") +
+  theme_bw()
 # Interpretation: standardized coefficients are ~0.56 for elevation and
 # ~0.50 for year, indicating comparably strong associations with clay
 # depth (in SD units) when each predictor is considered at the mean of
 # the other. The interaction is much smaller (~0.15), suggesting the
 # elevation-clay depth relationship changes only modestly across years,
 # though it is still statistically significant (see p-value above).
-
-FactVegClay |>
-  # lm_fit_beta$fitted.values are the unstandardized fitted values from
-  # the underlying lm fit
-  ggplot2::ggplot(aes(x = Elevation_m, y = ClayDepth_cm, color = factor(Year))) +
-  geom_point() +
-  geom_line(aes(y = lm_fit_beta$fitted.values), linewidth = 1) +
-  labs(x = "Elevation (m)", y = "Clay depth (cm)", color = "Year") +
-  theme_bw()
 
 # check the difference if we would have used geom_smooth() with lm 
 # this calculates a new lm fit for each year, 
@@ -85,7 +96,7 @@ FactVegClay |>
   theme_bw()
 
 
-# ----------------04 logistic regression of Limonium vulgare occurrence-------------------
+# ----------------06 logistic regression of Limonium vulgare occurrence-------------------
 # Limonium.vulgare is a presence/absence (0/1) variable, so we model it
 # with a binomial (logistic) glmmTMB model against elevation.
 
