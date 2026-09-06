@@ -179,7 +179,7 @@ predict(
 )
 ```
 
-Our final interpretation of the analysis is that sedimentation rate (increase in clay depth over time) is higher at higher elevations than at lower elevations. At 1.05 m elevation, clay depth increased by  0.83 cm over 8 years, while at 1.2 m elevation, clay depth increased  7.97 cm over the same period. This suggests that at low elevation some factor is inhibiting the sedimentation. This may be the sparse vegetation due to permanent water logging, leading to anoxia and high sulfide concentrations, and possibly also removal of sediment with microbial mats that dry up and are washed away. 
+Our final interpretation of the analysis is that the predicted sedimentation rate (increase in clay depth over time) is higher at higher elevations than at lower elevations. At 1.05 m elevation, the model predicts an increase in clay depth from approximately 0.83 cm in 2017 to 2.73 cm in 2023, an increase of 1.91 cm over six years. At 1.20 m elevation, it predicts an increase from approximately 3.25 cm to 6.79 cm, an increase of 3.54 cm over the same period. This pattern is consistent with some factor inhibiting sedimentation at lower elevations. Possible explanations include sparse vegetation associated with prolonged waterlogging, which may lead to anoxia and high sulfide concentrations, as well as the removal of sediment when microbial mats dry out and are washed away. 
 
 # 06 Accounting for repeated measures on the same transect points
 
