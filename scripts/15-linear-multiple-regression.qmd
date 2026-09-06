@@ -26,18 +26,18 @@ source(here::here("scripts", "01-setup.R"))
 library(lm.beta)
 
 #authenticate with Google Drive to read the dataset from the Google Sheet
-googledrive::drive_auth()
+googledrive::drive_auth(email = "h.olff@rug.nl")
 ```
 
 # 02 Read and explore the dataset
-
+Read the dataset from Google Sheets as a list of tibbles and copy the FactVegClay tibble to a local variable. The dataset contains clay depth measurements from the microtransect in the salt marsh, along with elevation and year of measurement.
 ```{r}
 Microtransect <- read_gsdb("https://docs.google.com/spreadsheets/d/1dJkH09imko9RgOkGzYQT74IeGY56QwiXjjBl7u0KcK0/")
 FactVegClay <- Microtransect$FactVegClay
 FactVegClay
 ```
 
-Explore the relation between elevation and clay depth.
+Explore the relation between clay depth and elevation, coloring points by year , and a linear regression line showing how overall ClayDepth_cm changes over with elevation (irrespective of year).
 
 ```{r}
 FactVegClay |>
@@ -46,7 +46,9 @@ FactVegClay |>
   geom_smooth(method = "lm", se = FALSE)
 ```
 
-Explore the relation between clay depth and year, coloring points by elevation with a diverging blue-yellow-red scale.
+The plot suggests that clay depth decreases with increasing elevation, but also that the relationship between clay depth and elevation may change over time (i.e., the increase seems to be stronger in more recent years). To investigate this further, we will have to fit a linear model with an interaction term between elevation and year.
+
+But first also explore the relation between clay depth and year, coloring points by elevation with a diverging blue-yellow-red scale. 
 
 ```{r}
 FactVegClay |>
@@ -57,11 +59,15 @@ FactVegClay |>
                      midpoint = mean(FactVegClay$Elevation_m), n.breaks = 8)
 ```
 
-# 03 Fit lm model with interaction term
+The plots suggests that that clay depth tends to increase over time, but the relationship is not consistent across different elevations, at higher elevations the increase seems more pronounced. Again, to investigate this further, we will have to fit a linear model with an interaction term between elevation and year.
 
+# 03 Fit lm model with interaction term
+We will fit a linear model with an interaction term between elevation and year, to investigate whether the relationship between clay depth and elevation changes over time.
+The model is Elevation_m + Year + Elevation_m:Year, where Elevation_m:Year is the interaction term between elevation and year. The model will be fitted to the data using the lm() function, and the results will be summarized using the broom package.
+Note that this model can also be written als ClayDepth_cm ~ Elevation_m * Year, where the * operator indicates that both main effects and the interaction term should be included in the model.
 ```{r}
 FactVegClay |>
-  lm(ClayDepth_cm ~ Elevation_m * Year, data = _) -> lm_fit 
+  lm(ClayDepth_cm ~ Elevation_m + Year + Elevation_m:Year, data = _) -> lm_fit 
 
 broom::tidy(lm_fit)
 broom::glance(lm_fit)
