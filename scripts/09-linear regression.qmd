@@ -101,17 +101,13 @@ The model summary reports several complementary aspects of the fitted model:
 5. **Prediction and relative importance:** The fitted equation can be used to obtain predicted clay depth for specified values of the original, uncentered predictors:
 
     $$
-    \text{ClayDepth\_cm} = 3176.88 - 3636.25 \times \text{Elevation\_m} - 1.58 \times \text{Year} + 1.81 \times \text{Elevation\_m} \times \text{Year}
+    \text{ClayDepth\_cm} = 3176.8818 - 3636.2477 \times \text{Elevation\_m} - 1.5831 \times \text{Year} + 1.8108 \times \text{Elevation\_m} \times \text{Year}
     $$
 
     For example, for a point at 1.5 m elevation in 2010, the predicted clay depth is approximately:
 
     $$
-    \begin{aligned}
-    \text{ClayDepth\_cm} &= 3176.88 - 3636.25 \times 1.5 - 1.58 \times 2010 \\
-    &\quad + 1.81 \times 1.5 \times 2010 \\
-    &= 0.17\ \text{cm}.
-    \end{aligned}
+    \text{ClayDepth\_cm} = 3176.8818 - 3636.2477 \times 1.5 - 1.5831 \times 2010 + 1.8108 \times 1.5 \times 2010 \approx 0.17\ \text{cm}.
     $$
 
     The individual coefficients should not be compared directly as measures of relative importance because they use different measurement scales. For example, changing elevation from metres to centimetres would change its coefficient by a factor of 100 without changing the fitted values or the underlying relationship. Standardized coefficients are more suitable for comparing the slopes on a common scale: they describe the expected change in the response, in standard-deviation units, associated with a one-standard-deviation change in a predictor, conditional on the other terms in the model. However, with an interaction, relative importance still depends on the values of the predictors at which the comparison is made.
@@ -138,13 +134,12 @@ FactVegClay |>
   # calculate the 
   lm.beta::lm.beta() -> lm_fit_beta
 
-# inspect the standardized coefficients
+# inspect the new standardized coefficients
 broom::tidy(lm_fit_beta)
-# inspect the overall fit of the model (R-squared, F-statistic, etc.)
-broom::glance(lm_fit_beta)
+# we do not need to rerun broom::glance(lm_fit_beta) at the standardization does not affect the model fit
 ```
 
-Interpretation: standardized coefficients are ~0.58 for elevation and ~0.47 for year, indicating comparably strong associations with clay depth (in SD units) when each predictor is considered at the mean of the other. The interaction is much smaller (~0.09), suggesting the elevation-clay depth relationship changes only modestly across years, though it is still statistically significant (see p-value above). Note that standardizing the variables is especially important for their parameter estimate and standard error of that estimate, not so much for their significance (p-value) or overall model fit (R-squared). The p-values and R-squared are the same for the centered and uncentered models, but the coefficients are more interpretable when standardized.
+Interpretation: the standardized coefficients are 0.559 for elevation, 0.503 for year, and 0.146 for the interaction. The elevation and year coefficients indicate comparably sized associations with clay depth when expressed in standard-deviation units, with each predictor considered conditional on the other terms in the model. The smaller interaction coefficient indicates that the change in the elevation–clay-depth relationship across years is more modest on this standardized scale, although the interaction remains statistically significant (see the coefficient table above). The corresponding unstandardized estimates are approximately 24.8 for `Elevation_m_c`, 0.476 for `Year_c`, and 2.53 for the interaction. Centering changes the interpretation of the coefficients and reduces parameterization-related collinearity; calculating standardized coefficients changes their scale. Neither operation changes the fitted values, overall model fit, or p-values for the corresponding terms.
 
 # 05 plot the fitted model 
 
@@ -153,12 +148,11 @@ A naive way of proceeding would be to plot the model in ggplot for elevation ver
 ```{r}
 FactVegClay |>
     dplyr::filter(Year<=2023) |>
-  # lm_fit_beta$fitted.values are the unstandardized fitted values from
-  # the underlying lm fit
   ggplot2::ggplot(aes(x = Elevation_m, y = ClayDepth_cm, color = factor(Year))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   labs(x = "Elevation (m)", y = "Clay depth (cm)", color = "Year") +
+  labs(title = "Fitted values are not from the year x elevation interaction model") +
   theme_bw()
 ```
 
