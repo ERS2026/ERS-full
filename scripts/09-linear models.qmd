@@ -53,12 +53,18 @@ But first also explore the relation between clay depth and year, coloring points
 
 ```{r}
 FactVegClay |>
-    dplyr::filter(Year<=2023) |>
+  dplyr::filter(Year<2023) |>
   ggplot2::ggplot(aes(x = Year, y = ClayDepth_cm)) +
   geom_point(aes(color = Elevation_m)) +
   geom_smooth(method = "lm", se = FALSE) +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ x,
+    se = FALSE,
+    linetype = "dashed"
+  ) +
   scale_color_steps2(low = "blue", mid = "yellow", high = "red", 
-                     midpoint = mean(FactVegClay$Elevation_m), n.breaks = 8)
+                     midpoint = mean(FactVegClay$Elevation_m, na.rm = TRUE), n.breaks = 8)
 ```
 
 The plots suggests that that clay depth tends to increase over time, but the relationship is not consistent across different elevations, at higher elevations the increase seems more pronounced. Again, to investigate this further, we will have to fit a linear model with an interaction term between elevation and year.
