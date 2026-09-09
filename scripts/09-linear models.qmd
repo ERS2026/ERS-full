@@ -202,10 +202,12 @@ FactVegClay_glmm <- FactVegClay |>
   dplyr::group_by(Point_ID) |>
   dplyr::mutate(
     baseline_elevation = dplyr::first(Elevation_m),
-    Year_c = Year - mean(Year),
-    baseline_elevation_c = baseline_elevation - mean(baseline_elevation)
+    Year_c = Year - mean(Year)
   ) |>
-  dplyr::ungroup()
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    baseline_elevation_c = baseline_elevation - mean(baseline_elevation)
+  )
 
 # Random year slope + AR(1) residual correlation
 glmm_fit_ar1 <- glmmTMB(
