@@ -1,0 +1,319 @@
+---
+title: "10 generalized linear models (GLMs)"
+subtitle: "Model plant occurrence along an elevation gradient with logistic regression"
+author: "Han Olff"
+date: "2025-09-16"
+editor_options:
+  chunk_output_type: console
+execute:
+  output: false
+  warning: false
+  message: false
+---
+# 00 Introduction to Generalized Linear Models 
+In Generalized Linear Models (GLMs) we let go of the assumption of Linear Models (LMs) that the residuals need to be normally distributed. Instead they can follow a binomal distribution, poission distribution, negative binomial distribution, or various zero-inflated distributions. 
+Typically the type of regression you do in a GLM is named after the distribution. For example a logistic regression (bionomial distribution), poisson regression (poisson distribution), etc. 
+
+You can use the following decision tree for determining the best GLM for your data, depending on a series of questions
+
+What kind of Y do I have?
+
+Continuous
+├── Can be negative / approximately symmetric
+│      → Gaussian
+└── Non-negative
+       ├── No zeros
+       │      → Gamma
+       └── Exact zeros present
+              → Tweedie
+              OR hurdle model if zero and positive values
+                 represent different biological processes
+
+Counts
+├── Variance ≈ mean
+│      → Poisson
+├── Variance > mean
+│      → Negative binomial
+└── More zeros than the count model predicts
+       → Zero-inflated Poisson
+       → Zero-inflated negative binomial
+       → or hurdle model
+Binary
+    → Binomial
+
+Proportion
+├── successes / number of trials
+│      → Binomial
+└── continuous proportion
+       → Beta regression
+
+
+This exercise uses logistic regression to model the presence (1) or absence
+(0) of salt-marsh plant species (so binomial response) along a microtransect. We compare linear and quadratic elevation responses, make predictions, and visualise the fitted
+occurrence probabilities.
+
+# 01 Setup your environment
+we will load the libraries glmmTMB for fitting GLMs and DHARMa for testing assumptions, as degree of zero-inflation etd
+```{r}
+# Run the common setup script containing packages and helper functions.
+source(here::here("scripts", "01-setup.R"))
+
+# Authenticate your @student.rug.nl Google account.
+gsheets_auth()
+
+library(glmmTMB) # for fitting generalized linear models (GLMs)
+library(DHARMa)  # for checking assumptions of GLMs
+```
+
+# 02 Read and prepare the data
+
+The `FactVegClay` table stores occurrence per species in wide format. Read the
+microtransect database, reshape the species columns to long format, and retain
+the 2025 observations (except `Salicornia.sp`).
+
+```{r}
+# Database: MicrotransectDB
+MicrotransectDB <- read_gsdb(
+  "https://docs.google.com/spreadsheets/d/1dJkH09imko9RgOkGzYQT74IeGY56QwiXjjBl7u0KcK0/"
+)
+FactVegClay2026_wide<-MicrotransectDB$FactVegClay |>
+  dplyr::filter(Year==2026)
+FactVegClay2026_long <- MicrotransectDB$FactVegClay |>
+  tidyr::pivot_longer(
+    cols = -c(Point_ID:ClayDepth_cm),
+    names_to = "Species",
+    values_to = "Present"
+  ) |>
+  dplyr::arrange(Year, Species, Point_ID) |>
+  dplyr::filter(Year == 2026, Species != "Salicornia.sp")
+
+FactVegClay2026_long
+```
+
+Calculate the thickness of the sand and clay layers and display their depth
+along the transect.
+
+```{r}
+Soil2026 <- FactVegClay2026_wide |>
+  dplyr::mutate(SandDepth_cm = 100 * Elevation_m - ClayDepth_cm) |>
+  dplyr::select(Point_ID, SandDepth_cm, ClayDepth_cm) |>
+  tidyr::pivot_longer(
+    cols = -Point_ID,
+    names_to = "SoilLayer",
+    values_to = "LayerThickness_cm"
+  )
+
+p1 <-Soil2026 |>
+  ggplot(aes(x = Point_ID, y = LayerThickness_cm, fill = SoilLayer)) +
+  geom_area() +
+  coord_cartesian(ylim = c(95, 125)) +
+  scale_fill_manual(values = c(
+    "SandDepth_cm" = "khaki",
+    "ClayDepth_cm" = "saddlebrown"
+  )) +
+  labs(x = "Distance along transect (m)",
+   y = "Layer thickness (cm)",
+   title="clay profile")
+p1
+```
+
+Show the observed occurrences of all species, then combine this figure with
+the soil profile.
+
+```{r}
+PlantPres <- FactVegClay2026_long |>
+  dplyr::filter(Present == 1) |>
+  dplyr::mutate(SpeciesNum = as.numeric(factor(Species)))
+
+p2 <- ggplot(
+  PlantPres,
+  aes(x = Point_ID, y = max(SpeciesNum) - SpeciesNum, colour = Species)
+) +
+  geom_point(size = 2) +
+  labs(x = NULL, y = 'species', title='species occurrence') +
+  theme(axis.text.x = element_blank(), axis.text.y = element_blank())
+p2
+# combine the ggplot objects in one plot with the patchwork package
+p2 / p1
+```
+
+# 03 Explore species responses to elevation
+
+Calculate the frequency of occurrence of each species in 2025 and select the
+six most common species for modelling.
+
+```{r}
+SpeciesFreq2026 <- FactVegClay2026 |>
+  dplyr::group_by(Species) |>
+  dplyr::summarise(Freq = mean(Present), .groups = "drop") |>
+  dplyr::arrange(desc(Freq))
+SpeciesFreq2026
+
+DomSpec <- c(
+  "Puccinellia.maritima", "Salicornia.europaea", "Limonium.vulgare",
+  "Plantago.maritima", "Glaux.maritima", "Salicornia.procumbens"
+)
+DomSpec
+```
+
+# 04 Fit logistic regression models
+
+For a binary response, logistic regression models the log odds of occurrence.
+First fit linear and quadratic elevation responses for *Glaux maritima*.
+
+```{r}
+m.Glaux1 <- MicrotransectDB$FactVegClay2026 |>
+  dplyr::filter(Species == "Glaux.maritima") |>
+  glmmTMB::glmmTMB(
+    Present ~ Elevation_m,
+    family = binomial(link = "logit"),
+    data = _
+  )
+summary(m.Glaux1)
+
+m.Glaux2 <- MicrotransectDB$FactVegClay2025 |>
+  dplyr::filter(Species == "Glaux.maritima") |>
+  glmmTMB::glmmTMB(
+    Present ~ Elevation_m + I(Elevation_m^2),
+    family = binomial(link = "logit"),
+    data = _
+  )
+summary(m.Glaux2)
+
+# Compare the two models. A lower AIC (by about 2 or more) favours that model.
+AIC(m.Glaux1, m.Glaux2)
+```
+
+Define reusable functions to fit each candidate model and add response-scale
+predictions to the data. The predictions are probabilities of occurrence.
+
+```{r}
+fit1 <- function(species_name, db = FactVegClay2025) {
+  db |>
+    dplyr::filter(Species == species_name) |>
+    glmmTMB::glmmTMB(
+      Present ~ Elevation_m,
+      family = binomial(link = "logit"),
+      data = _
+    )
+}
+
+fit2 <- function(species_name, db = FactVegClay2025) {
+  db |>
+    dplyr::filter(Species == species_name) |>
+    glmmTMB::glmmTMB(
+      Present ~ Elevation_m + I(Elevation_m^2),
+      family = binomial(link = "logit"),
+      data = _
+    )
+}
+
+add_predictions <- function(species_name, model,
+                            db = FactVegClay2025) {
+  predictions <- if ("Predicted" %in% names(db)) {
+    db$Predicted
+  } else {
+    rep(NA_real_, nrow(db))
+  }
+
+  rows <- db$Species == species_name
+  predictions[rows] <- predict(
+    model,
+    newdata = db[rows, , drop = FALSE],
+    type = "response"
+  )
+
+  db$Predicted <- predictions
+  db
+}
+```
+
+Inspect the two candidate models for each dominant species. Select a model
+using the summaries and AIC comparison, then add its predictions to the
+dataset.
+
+```{r}
+# Glaux maritima: linear model
+summary(fit1("Glaux.maritima"))
+summary(fit2("Glaux.maritima"))
+FactVegClay2025 <- add_predictions(
+  "Glaux.maritima", fit1("Glaux.maritima")
+)
+
+# Limonium vulgare: linear model
+summary(fit1("Limonium.vulgare"))
+summary(fit2("Limonium.vulgare"))
+FactVegClay2025 <- add_predictions(
+  "Limonium.vulgare", fit1("Limonium.vulgare")
+)
+
+# Plantago maritima: quadratic model
+summary(fit1("Plantago.maritima"))
+summary(fit2("Plantago.maritima"))
+FactVegClay2025 <- add_predictions(
+  "Plantago.maritima", fit2("Plantago.maritima")
+)
+
+# Puccinellia maritima: linear model
+summary(fit1("Puccinellia.maritima"))
+summary(fit2("Puccinellia.maritima"))
+FactVegClay2025 <- add_predictions(
+  "Puccinellia.maritima", fit1("Puccinellia.maritima")
+)
+
+# Salicornia europaea: quadratic model
+summary(fit1("Salicornia.europaea"))
+summary(fit2("Salicornia.europaea"))
+FactVegClay2025 <- add_predictions(
+  "Salicornia.europaea", fit2("Salicornia.europaea")
+)
+
+# Salicornia procumbens: linear model
+summary(fit1("Salicornia.procumbens"))
+summary(fit2("Salicornia.procumbens"))
+FactVegClay2025 <- add_predictions(
+  "Salicornia.procumbens", fit1("Salicornia.procumbens")
+)
+```
+
+We can use the package DHARMa  for model diagnostics (it is not for testing  predictor significance)
+For example, check dispersion, zero inflation, and outliers for one selected
+model. 
+
+```{r}
+glaux_residuals <- DHARMa::simulateResiduals(fit1("Glaux.maritima"), n = 1000)
+plot(glaux_residuals)
+DHARMa::testDispersion(glaux_residuals)
+DHARMa::testZeroInflation(glaux_residuals)
+DHARMa::testOutliers(glaux_residuals)
+```
+
+Because for the dispersion test, $P > 0.05$, the test is not significant, so there is no evidence of overdispersion or underdispersion in this model. This is the desirable result for this diagnostic
+DHARMa::testZeroInflation(glaux_residuals) compares the number of observed zeros with the number expected under the fitted model. in this case, The ratio is almost exactly 1, meaning the model generated approximately the expected number of zeros. Since $p = 1$, there is no evidence of excess zero inflation in the Glaux maritima model.
+
+# 05 Plot the fitted occurrence probabilities
+
+```{r}
+# Observed presences/absences and fitted probabilities per species.
+p4 <- FactVegClay2025 |>
+  dplyr::filter(Species %in% DomSpec) |>
+  ggplot(aes(x = Elevation_m, y = Present)) +
+  geom_point(size = 1) +
+  geom_line(aes(y = Predicted)) +
+  labs(title = "Microtransect", x = "Elevation (m)", y = "Presence") +
+  ylim(-1, 2) +
+  facet_wrap(~Species)
+p4
+
+# Fitted occurrence probabilities for all six species in one plot.
+p5 <- FactVegClay2025 |>
+  dplyr::filter(Species %in% DomSpec) |>
+  ggplot(aes(x = Elevation_m, colour = Species)) +
+  geom_line(aes(y = Predicted), linewidth = 2) +
+  labs(title = "Microtransect", x = "Elevation (m)", y = "Presence") +
+  ylim(0, 1)
+p5
+
+# Combine the final two plots vertically.
+p4 / p5
+```

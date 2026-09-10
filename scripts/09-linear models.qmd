@@ -91,7 +91,7 @@ broom::augment(lm_fit) |>
 
 The model summary reports several complementary aspects of the fitted model:
 1. **Q-q plot of residuals:** It is an assumption of linear regression that the residuals (differences between observed and predicted values) are normally distributed. A Q–Q (quantile–quantile) plot compares the distribution of your model’s residuals with an ideal normal distribution. If the distribution of the residuals is normal, than the Q-Q plot should show points approximately along the diagonal line. The Q-Q plot shows in this case that the residuals are indeed approximately normally distributed, with some deviation in the tails. This suggests that the model is a reasonable fit to the data, but there may be some outliers or influential points that could be affecting the fit. 
-A common mistake in this context is that people check if the response variable (y) is normally distributed, but that is not the assumption. It is about the unexplained variation (residuals) <u>after<u> all the terms in the models have been included. So you can only check this assumption after having fit a model. 
+A common mistake in this context is that people check if the response variable (y) is normally distributed, but that is not the assumption. It is about the unexplained variation (residuals) after all the terms in the models have been included. So you can only check this assumption after having fit a model. 
 
 2. **Overall fit:** The $R^2$ value indicates the proportion of variation in `ClayDepth_cm` explained by the predictors. Here, the model explains approximately 55% of the observed variation. However, $R^2$ alone does not establish that the model is appropriate, and a larger value is not automatically preferable if models have different complexity or are being evaluated on different data.
 
@@ -137,7 +137,7 @@ FactVegClay |>
 
 # inspect the new standardized coefficients
 broom::tidy(lm_fit_beta)
-# we do not need to rerun broom::glance(lm_fit_beta) at the standardization does not affect the model fit
+# we do not need to rerun broom::glance(lm_fit_beta) at the standardization does not affect the model fit (statistic, p-value) only the parameter estimate and SE
 ```
 
 Interpretation: the standardized coefficients are 0.559 for elevation, 0.503 for year, and 0.146 for the interaction. The elevation and year coefficients indicate comparably sized associations with clay depth when expressed in standard-deviation units, with each predictor considered conditional on the other terms in the model. The smaller interaction coefficient indicates that the change in the elevation–clay-depth relationship across years is more modest on this standardized scale, although the interaction remains statistically significant (see the coefficient table above). The corresponding unstandardized estimates are approximately 24.8 for `Elevation_m_c`, 0.476 for `Year_c`, and 2.53 for the interaction. Centering changes the interpretation of the coefficients and reduces parameterization-related collinearity; calculating standardized coefficients changes their scale. Neither operation changes the fitted values, overall model fit, or p-values for the corresponding terms.
