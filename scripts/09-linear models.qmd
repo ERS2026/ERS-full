@@ -27,14 +27,13 @@ $$
 Here:
 - $\beta_0$ is the intercept.
 - $\beta_1$ is the effect (slope) of rainfall.
-- $\varepsilon$ represents unexplained variation (residuals).
+- $\varepsilon$ represents unexplained variation (residuals) 
+This unexplained variation can be due to measurement error or to the impact of other factors that you did not measure (e.g., temperature)
 
-In R, you fit the model (calculate the likely value of intercept and slope) as:
+In R, you fit a linear model (calculate the likely value of intercept and slope) as:
 ```{r}
 model <- lm(biomass ~ rainfall, data = dat)
 ```
-
-
 
 ## Distributional assumption
 
@@ -43,7 +42,7 @@ A standard linear model assumes that the residuals are approximately normally di
 $$
 \varepsilon_i \sim N(0, \sigma^2)
 $$
-
+After fitting a linear model, you typically test if this assumption is true by fitting a Q-Q plot. If the assumption does not hold, you should transform the data or use another modelling approach, such as a generalized linear model. 
 
 # 01 Setup
 
