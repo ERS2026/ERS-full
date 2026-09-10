@@ -217,20 +217,15 @@ fit2 <- function(species_name, db = FactVegClay2026_long) {
 
 add_predictions <- function(species_name, model,
                             db = FactVegClay2026_long) {
-  predictions <- if ("Predicted" %in% names(db)) {
-    db$Predicted
-  } else {
-    rep(NA_real_, nrow(db))
-  }
+  if (!"Predicted" %in% names(db)) db$Predicted <- NA_real_
 
   rows <- db$Species == species_name
-  predictions[rows] <- predict(
+  db$Predicted[rows] <- predict(
     model,
     newdata = db[rows, , drop = FALSE],
     type = "response"
   )
 
-  db$Predicted <- predictions
   db
 }
 ```
