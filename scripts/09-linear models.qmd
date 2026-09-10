@@ -57,17 +57,11 @@ FactVegClay |>
   ggplot2::ggplot(aes(x = Year, y = ClayDepth_cm)) +
   geom_point(aes(color = Elevation_m)) +
   geom_smooth(method = "lm", se = FALSE) +
-  geom_smooth(
-    method = "lm",
-    formula = y ~ poly(x, 2),
-    se = FALSE,
-    linetype = "dashed"
-  ) +
   scale_color_steps2(low = "blue", mid = "yellow", high = "red", 
                      midpoint = mean(FactVegClay$Elevation_m, na.rm = TRUE), n.breaks = 8)
 ```
 
-The plots suggests that that clay depth tends to increase over time, but the relationship is not consistent across different elevations, at higher elevations the increase seems more pronounced. Again, to investigate this further, we will have to fit a linear model with an interaction term between elevation and year.
+The plot suggests that clay depth tends to increase over time. It also indicates that this temporal trend may differ across elevations, potentially being stronger at higher elevations. We test this using a linear model with an elevation-by-year interaction term.
 
 # 03 Fit an lm model with interaction term
 We will fit a linear model using the with an interaction term between elevation and year, to investigate whether the relationship between clay depth and elevation changes over time.
@@ -96,7 +90,8 @@ broom::augment(lm_fit) |>
 ```
 
 The model summary reports several complementary aspects of the fitted model:
-1. **Q-q plot of residuals:** It is an assumption of linear regression that the **residuals** are normally distributed. In that case the Q-Q plot should show points approximately along the diagonal line. The Q-Q plot shows in this case that the residuals are indeed approximately normally distributed, with some deviation in the tails. This suggests that the model is a reasonable fit to the data, but there may be some outliers or influential points that could be affecting the fit. A common mistake in this context is that people check if the response variable (y) is normally distributed, but that is not the assumption. It is about the unexplained variables after all the terms in the models have been included. So you can only check this assumption after having fit a model. 
+1. **Q-q plot of residuals:** It is an assumption of linear regression that the residuals (differences between observed and predicted values) are normally distributed. A Q–Q (quantile–quantile) plot compares the distribution of your model’s residuals with an ideal normal distribution. If the distribution of the residuals is normal, than the Q-Q plot should show points approximately along the diagonal line. The Q-Q plot shows in this case that the residuals are indeed approximately normally distributed, with some deviation in the tails. This suggests that the model is a reasonable fit to the data, but there may be some outliers or influential points that could be affecting the fit. 
+A common mistake in this context is that people check if the response variable (y) is normally distributed, but that is not the assumption. It is about the unexplained variation (residuals) <u>after<u> all the terms in the models have been included. So you can only check this assumption after having fit a model. 
 
 2. **Overall fit:** The $R^2$ value indicates the proportion of variation in `ClayDepth_cm` explained by the predictors. Here, the model explains approximately 55% of the observed variation. However, $R^2$ alone does not establish that the model is appropriate, and a larger value is not automatically preferable if models have different complexity or are being evaluated on different data.
 
