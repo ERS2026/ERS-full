@@ -1,6 +1,6 @@
 ---
-title: "Linear multiple regression with an interaction term"
-subtitle: "Modeling clay depth as a function of elevation and year"
+title: "Linear models"
+subtitle: "Modeling clay depth as a function of elevation and year using linear multiple regression with an interaction term"
 editor_options: 
   chunk_output_type: console
 execute:
@@ -8,6 +8,42 @@ execute:
   warning: false
   message: false
 ---
+
+# Introduction
+A linear model is a statistical model in which the expected value of a response variable ($Y$) is described as a linear combination of predictors.
+
+The general form is:
+
+$$
+Y_i = \beta_0 + \beta_1 X_{1i} + \beta_2 X_{2i} + \cdots + \beta_p X_{pi} + \varepsilon_i
+$$
+
+For example, if you want to explain plant biomass from rainfall:
+
+$$
+\text{biomass} = \beta_0 + \beta_1 \, \text{rainfall} + \varepsilon
+$$
+ 
+Here:
+- $\beta_0$ is the intercept.
+- $\beta_1$ is the effect (slope) of rainfall.
+- $\varepsilon$ represents unexplained variation (residuals).
+
+In R, you fit the model (calculate the likely value of intercept and slope) as:
+```{r}
+model <- lm(biomass ~ rainfall, data = dat)
+```
+
+
+
+## Distributional assumption
+
+A standard linear model assumes that the residuals are approximately normally distributed with mean zero and some fixed standard deviation $\sigma$:
+
+$$
+\varepsilon_i \sim N(0, \sigma^2)
+$$
+
 
 # 01 Setup
 

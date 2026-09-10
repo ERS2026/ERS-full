@@ -6,7 +6,7 @@
 # input databases: simulated data
 
 #--------------------------01 Set up the environment ----
-source("scripts/00-setup.R")
+source("scripts/01-setup.R")
 gsheets_auth()
 library(glmmTMB)
 library(car)
