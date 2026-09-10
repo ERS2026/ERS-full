@@ -154,16 +154,16 @@ DomSpec <- c("Salicornia.europaea","Puccinellia.maritima", "Limonium.vulgare","S
 DomSpec
 ```
 
-# 04 Fit logistic regression models
+# 04 Generalized linear models: fit logistic regression models
 
-For a binary response, logistic regression models the log odds of occurrence. For observation $i$, if $p_i$ is the probability that the species occurs, then:
+For a binary response, logistic regression models the log odds (logit) of occurrence.
 
 $$
 \log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 X_i
 $$
+Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1.
 
-Here, $p_i / (1 - p_i)$ is the odds of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor.
-
+Do a logistic regression:
 First fit linear and quadratic elevation responses for *Glaux maritima*.
 
 ```{r}
