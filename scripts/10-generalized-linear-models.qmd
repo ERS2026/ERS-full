@@ -143,16 +143,14 @@ Calculate the frequency of occurrence of each species in 2025 and select the
 six most common species for modelling.
 
 ```{r}
-SpeciesFreq2026 <- FactVegClay2026 |>
+SpeciesFreq2026 <- FactVegClay2026_long |>
   dplyr::group_by(Species) |>
-  dplyr::summarise(Freq = mean(Present), .groups = "drop") |>
+  dplyr::summarise(Freq = mean(Present,na.rm=TRUE), .groups = "drop") |>
   dplyr::arrange(desc(Freq))
 SpeciesFreq2026
 
-DomSpec <- c(
-  "Puccinellia.maritima", "Salicornia.europaea", "Limonium.vulgare",
-  "Plantago.maritima", "Glaux.maritima", "Salicornia.procumbens"
-)
+DomSpec <- c("Salicornia.europaea","Puccinellia.maritima", "Limonium.vulgare","Suaeda.maritima", "Plantago.maritima", "Glaux.maritima", "Salicornia.procumbens", "Atriplex.portulacoides", "Spartina.anglica")
+
 DomSpec
 ```
 
@@ -162,7 +160,7 @@ For a binary response, logistic regression models the log odds of occurrence.
 First fit linear and quadratic elevation responses for *Glaux maritima*.
 
 ```{r}
-m.Glaux1 <- MicrotransectDB$FactVegClay2026 |>
+m.Glaux1 <- FactVegClay2026_long |>
   dplyr::filter(Species == "Glaux.maritima") |>
   glmmTMB::glmmTMB(
     Present ~ Elevation_m,
@@ -171,7 +169,7 @@ m.Glaux1 <- MicrotransectDB$FactVegClay2026 |>
   )
 summary(m.Glaux1)
 
-m.Glaux2 <- MicrotransectDB$FactVegClay2025 |>
+m.Glaux2 <- FactVegClay2026_long |>
   dplyr::filter(Species == "Glaux.maritima") |>
   glmmTMB::glmmTMB(
     Present ~ Elevation_m + I(Elevation_m^2),
@@ -180,15 +178,17 @@ m.Glaux2 <- MicrotransectDB$FactVegClay2025 |>
   )
 summary(m.Glaux2)
 
-# Compare the two models. A lower AIC (by about 2 or more) favours that model.
+# Compare the two models. An AIC of about 2 or more favours that model.
 AIC(m.Glaux1, m.Glaux2)
 ```
 
-Define reusable functions to fit each candidate model and add response-scale
+We find that the quadratic model fits significantly better for Glaux than the linear model. 
+
+Because we want to do this for multiple species, define reusable functions to fit each candidate model and add response-scale
 predictions to the data. The predictions are probabilities of occurrence.
 
 ```{r}
-fit1 <- function(species_name, db = FactVegClay2025) {
+fit1 <- function(species_name, db = FactVegClay2026_long) {
   db |>
     dplyr::filter(Species == species_name) |>
     glmmTMB::glmmTMB(
@@ -198,7 +198,7 @@ fit1 <- function(species_name, db = FactVegClay2025) {
     )
 }
 
-fit2 <- function(species_name, db = FactVegClay2025) {
+fit2 <- function(species_name, db = FactVegClay2026_long) {
   db |>
     dplyr::filter(Species == species_name) |>
     glmmTMB::glmmTMB(
@@ -209,7 +209,7 @@ fit2 <- function(species_name, db = FactVegClay2025) {
 }
 
 add_predictions <- function(species_name, model,
-                            db = FactVegClay2025) {
+                            db = FactVegClay2026_long) {
   predictions <- if ("Predicted" %in% names(db)) {
     db$Predicted
   } else {
@@ -228,52 +228,70 @@ add_predictions <- function(species_name, model,
 }
 ```
 
-Inspect the two candidate models for each dominant species. Select a model
-using the summaries and AIC comparison, then add its predictions to the
+Inspect the two candidate models for each dominant species. If the quadratic term is significant, use the quadratic model, if only the linear term is significant, then use that model. Add the selected model  to the
 dataset.
 
 ```{r}
-# Glaux maritima: linear model
+# Glaux maritima
 summary(fit1("Glaux.maritima"))
 summary(fit2("Glaux.maritima"))
-FactVegClay2025 <- add_predictions(
-  "Glaux.maritima", fit1("Glaux.maritima")
-)
+FactVegClay2026_long<-add_predictions("Glaux.maritima", fit1("Glaux.maritima"))
 
-# Limonium vulgare: linear model
+# Limonium vulgare
 summary(fit1("Limonium.vulgare"))
 summary(fit2("Limonium.vulgare"))
-FactVegClay2025 <- add_predictions(
+FactVegClay2026_long <- add_predictions(
   "Limonium.vulgare", fit1("Limonium.vulgare")
 )
 
-# Plantago maritima: quadratic model
+# Plantago maritima
 summary(fit1("Plantago.maritima"))
 summary(fit2("Plantago.maritima"))
-FactVegClay2025 <- add_predictions(
+FactVegClay2026_long <- add_predictions(
   "Plantago.maritima", fit2("Plantago.maritima")
 )
 
-# Puccinellia maritima: linear model
+# Puccinellia maritima
 summary(fit1("Puccinellia.maritima"))
 summary(fit2("Puccinellia.maritima"))
-FactVegClay2025 <- add_predictions(
+FactVegClay2026_long <- add_predictions(
   "Puccinellia.maritima", fit1("Puccinellia.maritima")
 )
 
-# Salicornia europaea: quadratic model
+# Salicornia europaea
 summary(fit1("Salicornia.europaea"))
 summary(fit2("Salicornia.europaea"))
-FactVegClay2025 <- add_predictions(
+FactVegClay2026_long <- add_predictions(
   "Salicornia.europaea", fit2("Salicornia.europaea")
 )
 
-# Salicornia procumbens: linear model
+# Salicornia.procumbens
 summary(fit1("Salicornia.procumbens"))
 summary(fit2("Salicornia.procumbens"))
-FactVegClay2025 <- add_predictions(
+FactVegClay2026_long <- add_predictions(
   "Salicornia.procumbens", fit1("Salicornia.procumbens")
 )
+
+# Atriplex.portulacoides
+summary(fit1("Atriplex.portulacoides"))
+summary(fit2("Atriplex.portulacoides"))
+FactVegClay2026_long <- add_predictions(
+  "Atriplex.portulacoides", fit1("Atriplex.portulacoides")
+)
+# Spartina.anglica
+summary(fit1("Spartina.anglica"))
+summary(fit2("Spartina.anglica"))
+FactVegClay2026_long <- add_predictions(
+  "Spartina.anglica", fit1("Spartina.anglica")
+)
+
+# Suaeda.maritima
+summary(fit1("Suaeda.maritima"))
+summary(fit2("Suaeda.maritima"))
+FactVegClay2026_long <- add_predictions(
+  "Suaeda.maritima", fit1("Suaeda.maritima")
+)
+
 ```
 
 We can use the package DHARMa  for model diagnostics (it is not for testing  predictor significance)
@@ -295,7 +313,7 @@ DHARMa::testZeroInflation(glaux_residuals) compares the number of observed zeros
 
 ```{r}
 # Observed presences/absences and fitted probabilities per species.
-p4 <- FactVegClay2025 |>
+p4 <- FactVegClay2026_long |>
   dplyr::filter(Species %in% DomSpec) |>
   ggplot(aes(x = Elevation_m, y = Present)) +
   geom_point(size = 1) +
@@ -306,10 +324,10 @@ p4 <- FactVegClay2025 |>
 p4
 
 # Fitted occurrence probabilities for all six species in one plot.
-p5 <- FactVegClay2025 |>
+p5 <- FactVegClay2026_long |>
   dplyr::filter(Species %in% DomSpec) |>
   ggplot(aes(x = Elevation_m, colour = Species)) +
-  geom_line(aes(y = Predicted), linewidth = 2) +
+  geom_line(aes(y = Predicted), linewidth = 1) +
   labs(title = "Microtransect", x = "Elevation (m)", y = "Presence") +
   ylim(0, 1)
 p5
