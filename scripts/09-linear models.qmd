@@ -148,7 +148,7 @@ A common mistake in this context is that people check if the response variable (
 
     The individual coefficients should not be compared directly as measures of relative importance because they use different measurement scales. For example, changing elevation from metres to centimetres would change its coefficient by a factor of 100 without changing the fitted values or the underlying relationship. Standardized coefficients are more suitable for comparing the slopes on a common scale: they describe the expected change in the response, in standard-deviation units, associated with a one-standard-deviation change in a predictor, conditional on the other terms in the model. However, with an interaction, relative importance still depends on the values of the predictors at which the comparison is made.
 
-    The very large VIF for the interaction term indicates substantial multicollinearity in this uncentered parameterization. Centering the predictors before forming the interaction generally reduces the correlation between the interaction and the main effects, making the coefficients easier to interpret. Centering does not change the fitted values or remove all collinearity. We therefore fit a centered model and calculate standardized coefficients in the next section.
+  **check variance inflation factors (VIFs)** The VIFs indicate how much the variance of a coefficient is inflated due to multicollinearity. A VIF above 10 is often considered indicative of problematic multicollinearity. In this model, the VIF for the interaction term is very large (over 100), indicating substantial multicollinearity in this uncentered parameterization. This can make the coefficients unstable and difficult to interpret. We therefore fit a centered model and calculate standardized coefficients in the next section.
 
 
 # 04 Fit an lm model with standardized (beta) estimates to assess their relative importance
@@ -175,11 +175,11 @@ broom::tidy(lm_fit_beta)
 # we do not need to rerun broom::glance(lm_fit_beta) at the standardization does not affect the model fit (statistic, p-value) only the parameter estimate and SE
 ```
 
-Interpretation: the standardized coefficients are 0.559 for elevation, 0.503 for year, and 0.146 for the interaction. The elevation and year coefficients indicate comparably sized associations with clay depth when expressed in standard-deviation units, with each predictor considered conditional on the other terms in the model. The smaller interaction coefficient indicates that the change in the elevation–clay-depth relationship across years is more modest on this standardized scale, although the interaction remains statistically significant (see the coefficient table above). The corresponding unstandardized estimates are approximately 24.8 for `Elevation_m_c`, 0.476 for `Year_c`, and 2.53 for the interaction. Centering changes the interpretation of the coefficients and reduces parameterization-related collinearity; calculating standardized coefficients changes their scale. Neither operation changes the fitted values, overall model fit, or p-values for the corresponding terms.
+Interpretation: the standardized coefficients are 0.575 for elevation, 0.471 for year, and 0.09 for the interaction. The elevation and year coefficients indicate comparably sized associations with clay depth when expressed in standard-deviation units, with each predictor considered conditional on the other terms in the model. The smaller interaction coefficient indicates that the change in the elevation–clay-depth relationship across years is more modest on this standardized scale, although the interaction remains statistically significant (see the coefficient table above). The corresponding unstandardized estimates are approximately 21.6 for `Elevation_m_c`, 0.475 for `Year_c`, and 3.65 for the interaction. Centering changes the interpretation of the coefficients and reduces parameterization-related collinearity; calculating standardized coefficients changes their scale. Neither operation changes the fitted values, overall model fit, or p-values for the corresponding terms.
 
 # 05 plot the fitted model 
 
-A naive way of proceeding would be to plot the model in ggplot for elevation versus clay-depths, with geom_smooth(method = "lm") combined year as a color aesthetic in the aes(). Shows that the effect of elevation is different for different years, sugggesting the interaction that we found in the model. 
+A naive way of proceeding would be to plot the model in ggplot for elevation versus clay-depths, with geom_smooth(method = "lm") combined with year as a color aesthetic in the aes(). Shows suggests that the effect of elevation is different for different years, sugggesting that we are looking at the  interaction that we found in the lm model. 
 
 ```{r}
 FactVegClay |>
@@ -192,7 +192,8 @@ FactVegClay |>
   theme_bw()
 ```
 
-But note that we are not the  model here that we just fitted. Instead we calculate here  a separate lm fit for each year! It does not accomodate year as having a linear effect on claydepth, as we tested in our model. To plot the fitted values from our model, we can use geom_line() with the fitted values from the centered lm fit `lm_fit_beta$fitted.values`. This works again because of row-order correspondence, not because the model is somehow evaluating uncentered predictors. `lm_fit_beta$fitted.values` is a vector of the already-computed fitted values from fitting on the centered data — one number per row of the training data `FactVegClay`, in the same row order.
+But note that we are **not plotting** the  model here that we just fitted. Instead we calculate here  a separate lm fit for each year! This plot does not accomodate year as having a linear effect on claydepth, as we tested in our model. 
+To plot the fitted values from our model, we can use geom_line() with the fitted values from the centered lm fit `lm_fit_beta$fitted.values`. This works again because of row-order correspondence, not because the model is somehow evaluating uncentered predictors. `lm_fit_beta$fitted.values` is a vector of the already-computed fitted values from fitting on the centered data — one number per row of the training data `FactVegClay`, in the same row order.
 
 ```{r}
 # plot the model with the fitted values from the centered lm fit
@@ -204,18 +205,18 @@ FactVegClay |>
   labs(x = "Elevation (m)", y = "Clay depth (cm)", color = "Year") +
   theme_bw()
 
-# predict clay depth at 1.05 m and 1.2 m elevation in 2017  and year 2025
+# predict clay depth at 1.0 m and 1.2 m elevation in 2017  and year 2025
 predict(
   lm_fit_beta,
   newdata = data.frame(
-    Elevation_m_c = c(1.05 - mean(FactVegClay$Elevation_m), 1.2 - mean(FactVegClay$Elevation_m)),
-    Year_c = c(2017 - mean(FactVegClay$Year), 2025 - mean(FactVegClay$Year)),
-    row.names = c("1.05", "1.2")
+    Elevation_m_c = c(1.05 - mean(FactVegClay$Elevation_m, na.rm=TRUE), 1.2 - mean(FactVegClay$Elevation_m, na.rm=TRUE)),
+    Year_c = c(2017 - mean(FactVegClay$Year, na.rm=TRUE), 2025 - mean(FactVegClay$Year, na.rm=TRUE)),
+    row.names = c("1.0", "1.2")
   )
 )
 ```
 
-Our final interpretation of the analysis is that the predicted sedimentation rate (increase in clay depth over time) is higher at higher elevations than at lower elevations. At 1.05 m elevation, the model predicts an increase in clay depth from approximately 0.83 cm in 2017 to 2.73 cm in 2023, an increase of 1.91 cm over six years. At 1.20 m elevation, it predicts an increase from approximately 3.25 cm to 6.79 cm, an increase of 3.54 cm over the same period. This pattern is consistent with some factor inhibiting sedimentation at lower elevations. Possible explanations include sparse vegetation associated with prolonged waterlogging, which may lead to anoxia and high sulfide concentrations, as well as the removal of sediment when microbial mats dry out and are washed away. 
+Our final interpretation of the analysis is that the predicted sedimentation rate (increase in clay depth over time) is higher at higher elevations than at lower elevations. At 1.0 m elevation, the model predicts an increase in clay depth from approximately 0.83 cm in 2017 to 2.73 cm in 2023, an increase of 1.91 cm over six years. At 1.2 m elevation, it predicts an increase from approximately 3.25 cm to 6.79 cm, an increase of 3.54 cm over the same period. This pattern is consistent with some factor inhibiting sedimentation at lower elevations. Possible explanations include sparse vegetation associated with prolonged waterlogging, which may lead to anoxia and high sulfide concentrations, as well as the removal of sediment when microbial mats dry out and are washed away. 
 
 # 06 Accounting for repeated measures on the same transect points
 
