@@ -10,6 +10,7 @@ execute:
 ---
 
 # Introduction
+
 A linear model is a statistical model in which the expected value of a response variable ($Y$) is described as a linear combination of predictors.
 
 The general form is:
@@ -23,14 +24,11 @@ For example, if you want to explain plant biomass from rainfall:
 $$
 \text{biomass} = \beta_0 + \beta_1 \, \text{rainfall} + \varepsilon
 $$
- 
-Here:
-- $\beta_0$ is the intercept.
-- $\beta_1$ is the effect (slope) of rainfall.
-- $\varepsilon$ represents unexplained variation (residuals) 
-This unexplained variation can be due to measurement error or to the impact of other factors that you did not measure (e.g., temperature)
+
+Here: - $\beta_0$ is the intercept. - $\beta_1$ is the effect (slope) of rainfall. - $\varepsilon$ represents unexplained variation (residuals) This unexplained variation can be due to measurement error or to the impact of other factors that you did not measure (e.g., temperature)
 
 In R, you fit a linear model (calculate the likely value of intercept and slope) as:
+
 ```{r}
 model <- lm(biomass ~ rainfall, data = dat)
 ```
@@ -41,8 +39,7 @@ A standard linear model assumes that the residuals are approximately normally di
 
 $$
 \varepsilon_i \sim N(0, \sigma^2)
-$$
-After fitting a linear model, you typically test if this assumption is true by fitting a Q-Q plot. If the assumption does not hold, you should transform the data or use another modelling approach, such as a generalized linear model. 
+$$ After fitting a linear model, you typically test if this assumption is true by fitting a Q-Q plot. If the assumption does not hold, you should transform the data or use another modelling approach, such as a generalized linear model.
 
 # 01 Setup
 
@@ -65,7 +62,9 @@ googledrive::drive_auth()
 ```
 
 # 02 Read and explore the dataset
+
 Read the dataset from Google Sheets as a list of tibbles and copy the FactVegClay tibble to a local variable. The dataset contains clay depth measurements from the microtransect in the salt marsh, along with elevation and year of measurement.
+
 ```{r}
 Microtransect <- read_gsdb("https://docs.google.com/spreadsheets/d/1dJkH09imko9RgOkGzYQT74IeGY56QwiXjjBl7u0KcK0/")
 FactVegClay <- Microtransect$FactVegClay
@@ -84,7 +83,7 @@ FactVegClay |>
 
 The plot suggests that clay depth decreases with increasing elevation, but also that the relationship between clay depth and elevation may change over time (i.e., the increase seems to be stronger in more recent years). To investigate this further, we will have to fit a linear model with an interaction term between elevation and year.
 
-But first also explore the relation between clay depth and year, coloring points by elevation with a diverging blue-yellow-red scale. 
+But first also explore the relation between clay depth and year, coloring points by elevation with a diverging blue-yellow-red scale.
 
 ```{r}
 FactVegClay |>
@@ -99,9 +98,9 @@ FactVegClay |>
 The plot suggests that clay depth tends to increase over time. It also indicates that this temporal trend may differ across elevations, potentially being stronger at higher elevations. We test this using a linear model with an elevation-by-year interaction term.
 
 # 03 Fit an lm model with interaction term
-We will fit a linear model using the with an interaction term between elevation and year, to investigate whether the relationship between clay depth and elevation changes over time.
-The model is Elevation_m + Year + Elevation_m:Year, where Elevation_m:Year is the interaction term between elevation and year. The model will be fitted to the data using the lm() function, and the results will be summarized using the broom package.
-Note that this model can also be written als ClayDepth_cm ~ Elevation_m * Year, where the * operator indicates that both main effects and the interaction term should be included in the model.
+
+We will fit a linear model using the with an interaction term between elevation and year, to investigate whether the relationship between clay depth and elevation changes over time. The model is Elevation_m + Year + Elevation_m:Year, where Elevation_m:Year is the interaction term between elevation and year. The model will be fitted to the data using the lm() function, and the results will be summarized using the broom package. Note that this model can also be written als ClayDepth_cm \~ Elevation_m \* Year, where the \* operator indicates that both main effects and the interaction term should be included in the model.
+
 ```{r}
 FactVegClay |>
   dplyr::filter(Year <= 2023) |>
@@ -124,36 +123,33 @@ broom::augment(lm_fit) |>
   car::vif(lm_fit)
 ```
 
-The model summary reports several complementary aspects of the fitted model:
-1. **Q-q plot of residuals:** It is an assumption of linear regression that the residuals (differences between observed and predicted values) are normally distributed. A Q–Q (quantile–quantile) plot compares the distribution of your model’s residuals with an ideal normal distribution. If the distribution of the residuals is normal, than the Q-Q plot should show points approximately along the diagonal line. The Q-Q plot shows in this case that the residuals are indeed approximately normally distributed, with some deviation in the tails. This suggests that the model is a reasonable fit to the data, but there may be some outliers or influential points that could be affecting the fit. 
-A common mistake in this context is that people check if the response variable (y) is normally distributed, but that is not the assumption. It is about the unexplained variation (residuals) after all the terms in the models have been included. So you can only check this assumption after having fit a model. 
+The model summary reports several complementary aspects of the fitted model: 1. **Q-q plot of residuals:** It is an assumption of linear regression that the residuals (differences between observed and predicted values) are normally distributed. A Q–Q (quantile–quantile) plot compares the distribution of your model’s residuals with an ideal normal distribution. If the distribution of the residuals is normal, than the Q-Q plot should show points approximately along the diagonal line. The Q-Q plot shows in this case that the residuals are indeed approximately normally distributed, with some deviation in the tails. This suggests that the model is a reasonable fit to the data, but there may be some outliers or influential points that could be affecting the fit. A common mistake in this context is that people check if the response variable (y) is normally distributed, but that is not the assumption. It is about the unexplained variation (residuals) after all the terms in the models have been included. So you can only check this assumption after having fit a model.
 
-2. **Overall fit:** The $R^2$ value indicates the proportion of variation in `ClayDepth_cm` explained by the predictors. Here, the model explains approximately 55% of the observed variation. However, $R^2$ alone does not establish that the model is appropriate, and a larger value is not automatically preferable if models have different complexity or are being evaluated on different data.
+2.  **Overall fit:** The $R^2$ value indicates the proportion of variation in `ClayDepth_cm` explained by the predictors. Here, the model explains approximately 55% of the observed variation. However, $R^2$ alone does not establish that the model is appropriate, and a larger value is not automatically preferable if models have different complexity or are being evaluated on different data.
 
-3. **Overall model test:** The F-statistic tests the null hypothesis that all slope coefficients are zero. A very small p-value ($p < 0.001$) provides evidence that the model contains at least one predictor associated with clay depth. It does not show that every predictor is important, nor does it establish causation.
+3.  **Overall model test:** The F-statistic tests the null hypothesis that all slope coefficients are zero. A very small p-value ($p < 0.001$) provides evidence that the model contains at least one predictor associated with clay depth. It does not show that every predictor is important, nor does it establish causation.
 
-4. **Individual coefficients:** The coefficient table reports estimates, standard errors, t-statistics, and p-values. In this model, `Elevation_m`, `Year`, and the interaction term have p-values below 0.001. Because the model includes a (significant) interaction, the main-effect coefficients should not be interpreted as overall effects: the effect of elevation on claydepth depends on year, and the effect of year on claydepth depends on elevation. These p-values also assume independent errors, an assumption that is revisited later using a mixed-effects model because the same points were measured repeatedly.
+4.  **Individual coefficients:** The coefficient table reports estimates, standard errors, t-statistics, and p-values. In this model, `Elevation_m`, `Year`, and the interaction term have p-values below 0.001. Because the model includes a (significant) interaction, the main-effect coefficients should not be interpreted as overall effects: the effect of elevation on claydepth depends on year, and the effect of year on claydepth depends on elevation. These p-values also assume independent errors, an assumption that is revisited later using a mixed-effects model because the same points were measured repeatedly.
 
-5. **Prediction and relative importance:** The fitted equation can be used to obtain predicted clay depth for specified values of the original, uncentered predictors:
+5.  **Prediction and relative importance:** The fitted equation can be used to obtain predicted clay depth for specified values of the original, uncentered predictors:
 
     $$
-    \text{ClayDepth\_cm} = 3176.8818 - 3636.2477 \times \text{Elevation\_m} - 1.5831 \times \text{Year} + 1.8108 \times \text{Elevation\_m} \times \text{Year}
-    $$
+     \text{ClayDepth\_cm} = 3176.8818 - 3636.2477 \times \text{Elevation\_m} - 1.5831 \times \text{Year} + 1.8108 \times \text{Elevation\_m} \times \text{Year}
+     $$
 
     For example, for a point at 1.5 m elevation in 2010, the predicted clay depth is approximately:
 
     $$
-    \text{ClayDepth\_cm} = 3176.8818 - 3636.2477 \times 1.5 - 1.5831 \times 2010 + 1.8108 \times 1.5 \times 2010 \approx 0.17\ \text{cm}.
-    $$
+     \text{ClayDepth\_cm} = 3176.8818 - 3636.2477 \times 1.5 - 1.5831 \times 2010 + 1.8108 \times 1.5 \times 2010 \approx 0.17\ \text{cm}.
+     $$
 
     The individual coefficients should not be compared directly as measures of relative importance because they use different measurement scales. For example, changing elevation from metres to centimetres would change its coefficient by a factor of 100 without changing the fitted values or the underlying relationship. Standardized coefficients are more suitable for comparing the slopes on a common scale: they describe the expected change in the response, in standard-deviation units, associated with a one-standard-deviation change in a predictor, conditional on the other terms in the model. However, with an interaction, relative importance still depends on the values of the predictors at which the comparison is made.
 
-  **check variance inflation factors (VIFs)** The VIFs indicate how much the variance of a coefficient is inflated due to multicollinearity. A VIF above 10 is often considered indicative of problematic multicollinearity. In this model, the VIF for the interaction term is very large (over 100), indicating substantial multicollinearity in this uncentered parameterization. This can make the coefficients unstable and difficult to interpret. We therefore fit a centered model and calculate standardized coefficients in the next section.
-
+**check variance inflation factors (VIFs)** The VIFs indicate how much the variance of a coefficient is inflated due to multicollinearity. A VIF above 10 is often considered indicative of problematic multicollinearity. In this model, the VIF for the interaction term is very large (over 100), indicating substantial multicollinearity in this uncentered parameterization. This can make the coefficients unstable and difficult to interpret. We therefore fit a centered model and calculate standardized coefficients in the next section.
 
 # 04 Fit an lm model with standardized (beta) estimates to assess their relative importance
 
-We will first center  `Elevation_m` and `Year` before fitting, based on the high VIFs calculated. This means that the mean of all elevations is subtracted from each elevation value, and the mean of all years is subtracted from each year value. This centers the data around zero, making the interpretation of the intercept more meaningful and reducing multicollinearity between the main effects and the interaction term. With an interaction term, leaving either predictor uncentered creates severe collinearity between the main effect and the interaction (inflated/misleading coefficients). These original calculated coeffisients are statistically unstable, meaning that a leaving a few observations out of the dataset or including some more would strongly change the value of the coefficients. Centering the predictors reduces this collinearity and stabilizes the coefficients, making them more interpretable.
+We will first center `Elevation_m` and `Year` before fitting, based on the high VIFs calculated. This means that the mean of all elevations is subtracted from each elevation value, and the mean of all years is subtracted from each year value. This centers the data around zero, making the interpretation of the intercept more meaningful and reducing multicollinearity between the main effects and the interaction term. With an interaction term, leaving either predictor uncentered creates severe collinearity between the main effect and the interaction (inflated/misleading coefficients). These original calculated coeffisients are statistically unstable, meaning that a leaving a few observations out of the dataset or including some more would strongly change the value of the coefficients. Centering the predictors reduces this collinearity and stabilizes the coefficients, making them more interpretable.
 
 So we will fit a single model on the centered (but not SD-scaled) predictors, then compute standardized coefficients from that same fit: `lm.beta()` takes the fitted `lm` object and adds a `standardized.coefficients` element to it, rather than requiring a separate refit on rescaled data. So `lm_fit_beta` is not a different model from `lm_fit` above — it *is* the centered `lm` fit, just with standardized coefficients attached, and it still works anywhere an `lm` object would (e.g. when used in `predict()`).
 
@@ -177,9 +173,9 @@ broom::tidy(lm_fit_beta)
 
 Interpretation: the standardized coefficients are 0.575 for elevation, 0.471 for year, and 0.09 for the interaction. The elevation and year coefficients indicate comparably sized associations with clay depth when expressed in standard-deviation units, with each predictor considered conditional on the other terms in the model. The smaller interaction coefficient indicates that the change in the elevation–clay-depth relationship across years is more modest on this standardized scale, although the interaction remains statistically significant (see the coefficient table above). The corresponding unstandardized estimates are approximately 21.6 for `Elevation_m_c`, 0.475 for `Year_c`, and 3.65 for the interaction. Centering changes the interpretation of the coefficients and reduces parameterization-related collinearity; calculating standardized coefficients changes their scale. Neither operation changes the fitted values, overall model fit, or p-values for the corresponding terms.
 
-# 05 plot the fitted model 
+# 05 plot the fitted model
 
-A naive way of proceeding would be to plot the model in ggplot for elevation versus clay-depths, with geom_smooth(method = "lm") combined with year as a color aesthetic in the aes(). Shows suggests that the effect of elevation is different for different years, sugggesting that we are looking at the  interaction that we found in the lm model. 
+A naive way of proceeding would be to plot the model in ggplot for elevation versus clay-depths, with geom_smooth(method = "lm") combined with year as a color aesthetic in the aes(). Shows suggests that the effect of elevation is different for different years, sugggesting that we are looking at the interaction that we found in the lm model.
 
 ```{r}
 FactVegClay |>
@@ -192,8 +188,7 @@ FactVegClay |>
   theme_bw()
 ```
 
-But note that we are **not plotting** the  model here that we just fitted. Instead we calculate here  a separate lm fit for each year! This plot does not accomodate year as having a linear effect on claydepth, as we tested in our model. 
-To plot the fitted values from our model, we can use geom_line() with the fitted values from the centered lm fit `lm_fit_beta$fitted.values`. This works again because of row-order correspondence, not because the model is somehow evaluating uncentered predictors. `lm_fit_beta$fitted.values` is a vector of the already-computed fitted values from fitting on the centered data — one number per row of the training data `FactVegClay`, in the same row order.
+But note that we are **not plotting** the model here that we just fitted. Instead we calculate here a separate lm fit for each year! This plot does not accomodate year as having a linear effect on claydepth, as we tested in our model. To plot the fitted values from our model, we can use geom_line() with the fitted values from the centered lm fit `lm_fit_beta$fitted.values`. This works again because of row-order correspondence, not because the model is somehow evaluating uncentered predictors. `lm_fit_beta$fitted.values` is a vector of the already-computed fitted values from fitting on the centered data — one number per row of the training data `FactVegClay`, in the same row order.
 
 ```{r}
 # plot the model with the fitted values from the centered lm fit
@@ -216,7 +211,7 @@ predict(
 )
 ```
 
-Our final interpretation of the analysis is that the predicted sedimentation rate (increase in clay depth over time) is higher at higher elevations than at lower elevations. At 1.0 m elevation, the model predicts an increase in clay depth from approximately 0.83 cm in 2017 to 2.73 cm in 2023, an increase of 1.91 cm over six years. At 1.2 m elevation, it predicts an increase from approximately 3.25 cm to 6.79 cm, an increase of 3.54 cm over the same period. This pattern is consistent with some factor inhibiting sedimentation at lower elevations. Possible explanations include sparse vegetation associated with prolonged waterlogging, which may lead to anoxia and high sulfide concentrations, as well as the removal of sediment when microbial mats dry out and are washed away. 
+Our final interpretation of the analysis is that the predicted sedimentation rate (increase in clay depth over time) is higher at higher elevations than at lower elevations. At 1.0 m elevation, the model predicts an increase in clay depth from approximately 0.83 cm in 2017 to 2.73 cm in 2023, an increase of 1.91 cm over six years. At 1.2 m elevation, it predicts an increase from approximately 3.25 cm to 6.79 cm, an increase of 3.54 cm over the same period. This pattern is consistent with some factor inhibiting sedimentation at lower elevations. Possible explanations include sparse vegetation associated with prolonged waterlogging, which may lead to anoxia and high sulfide concentrations, as well as the removal of sediment when microbial mats dry out and are washed away.
 
 # 06 Accounting for repeated measures on the same transect points
 
