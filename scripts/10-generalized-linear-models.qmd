@@ -112,7 +112,7 @@ p1 <-Soil2026 |>
     "ClayDepth_cm" = "saddlebrown"
   )) +
   labs(
-    x = "Distance along transect (m)",
+    x = "Distance along the transect (m)",
     y = "Layer thickness (cm)",
     title = "clay profile"
   ) +
@@ -123,17 +123,22 @@ p1
 Show the observed occurrences of all species, then combine this figure with the soil profile.
 
 ```{r}
+# make plant presence dataset for each transectpoint
 PlantPres <- FactVegClay2026_long |>
   dplyr::filter(Present == 1) |>
-  dplyr::mutate(SpeciesNum = as.numeric(factor(Species)))
+  dplyr::mutate(
+    Species = factor(Species, levels = rev(sort(unique(Species))))
+  )
 
 p2 <- ggplot(
   PlantPres,
-  aes(x = Point_ID, y = max(SpeciesNum) - SpeciesNum, colour = Species)
+  aes(x = Point_ID, y = Species, color=Species)
 ) +
   geom_point(size = 2) +
-  labs(x = NULL, y = 'species', title='species occurrence') +
-  theme_bw(base_size = 14) 
+  labs(x = NULL, y = NULL, title = "Species occurrence") +
+  theme_bw(base_size = 14) +
+  guides(color = "none") +
+  scale_y_discrete(position = "right")
 p2
 
 # combine the ggplot objects in one plot with the patchwork package
