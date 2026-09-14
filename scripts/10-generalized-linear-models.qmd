@@ -152,40 +152,81 @@ DomSpec <- c("Salicornia.europaea","Puccinellia.maritima", "Limonium.vulgare","S
 DomSpec
 ```
 
-# 04 Generalized linear models: fit logistic regression models
+# 04 Generalized linear models: the logistic regression model
 
 For a binary response, logistic regression models the log odds (logit) of occurrence.
 
 $$
 \log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 X_i
 $$ Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1.
+# 05 example: logistic regression of Glaux maritima occurrence along the elevation gradient
 
-Do a logistic regression: First fit linear and quadratic elevation responses for *Glaux maritima*.
+Do a logistic regression:  fit linear and quadratic elevation response models for *Glaux maritima*.
 
 ```{r}
 m.Glaux1 <- FactVegClay2026_long |>
   dplyr::filter(Species == "Glaux.maritima") |>
-  glmmTMB::glmmTMB(
-    Present ~ Elevation_m,
-    family = binomial(link = "logit"),
-    data = _
+  glm(Present ~ Elevation_m,
+      family = binomial(link = "logit"),
+      data = _
   )
 summary(m.Glaux1)
 
 m.Glaux2 <- FactVegClay2026_long |>
   dplyr::filter(Species == "Glaux.maritima") |>
-  glmmTMB::glmmTMB(
+  glm(
     Present ~ Elevation_m + I(Elevation_m^2),
     family = binomial(link = "logit"),
     data = _
   )
 summary(m.Glaux2)
 
-# Compare the two models. An AIC of about 2 or more favours that model.
-AIC(m.Glaux1, m.Glaux2)
+# if the quadratic term is significant, use the quadratic model, if only the linear term is significant, then use that model. 
+
+# plot the fitted models m.Glaux1 and m.Glaux2
+FactVegClay2026_long |>
+  dplyr::filter(Species == "Glaux.maritima") |>
+  ggplot(aes(x = Elevation_m, y = Present)) +
+  geom_point(size = 1) +
+  geom_smooth(
+    method = "glm",
+    formula = y ~ x,
+    method.args = list(family = binomial(link = "logit")),
+    se = FALSE,
+    color = "red",
+    linewidth = 1
+  ) +
+  geom_smooth(
+    method = "glm",
+    formula = y ~ x + I(x^2),
+    method.args = list(family = binomial(link = "logit")),
+    se = FALSE,
+    color = "blue",
+    linewidth = 1
+  ) +
+  labs(
+    title = "Glaux maritima",
+    x = "Elevation (m)",
+    y = "Presence probability"
+  ) +
+  coord_cartesian(ylim = c(0, 1))
 ```
 
-We find that the quadratic model fits significantly better for Glaux than the linear model.
+We find that the quadratic model fits significantly better for Glaux than the linear model (significant quadratic term). The blue line is the quadratic model, the red line is the linear model. The quadratic model predicts a peak in occurrence probability arround 1.22 m elevation.
+
+We can use the package DHARMa to check whether the model adequately describes how the probability of Glaux presence changes with elevation. - Not perfect here
+
+```{r}
+glaux_residuals2 <- DHARMa::simulateResiduals(m.Glaux2)
+plot(glaux_residuals2)
+
+DHARMa::plotResiduals(
+  glaux_residuals2,
+  form = model.frame(m.Glaux2)$Elevation_m
+)
+```
+
+There are some deviations from the expected uniform distribution of residuals, but overall the model seems to fit reasonably well. The residuals are not perfectly uniform, but there is no strong pattern with elevation.
 
 Because we want to do this for multiple species, define reusable functions to fit each candidate model and add response-scale predictions to the data. The predictions are probabilities of occurrence.
 
@@ -290,17 +331,7 @@ FactVegClay2026_long <- add_predictions(
 
 ```
 
-We can use the package DHARMa for model diagnostics (it is not for testing predictor significance) For example, check dispersion, zero inflation, and outliers for one selected model.
 
-```{r}
-glaux_residuals <- DHARMa::simulateResiduals(fit1("Glaux.maritima"), n = 1000)
-plot(glaux_residuals)
-DHARMa::testDispersion(glaux_residuals)
-DHARMa::testZeroInflation(glaux_residuals)
-DHARMa::testOutliers(glaux_residuals)
-```
-
-Because for the dispersion test, $P > 0.05$, the test is not significant, so there is no evidence of overdispersion or underdispersion in this model. This is the desirable result for this diagnostic DHARMa::testZeroInflation(glaux_residuals) compares the number of observed zeros with the number expected under the fitted model. in this case, The ratio is almost exactly 1, meaning the model generated approximately the expected number of zeros. Since $p = 1$, there is no evidence of excess zero inflation in the Glaux maritima model.
 
 # 05 Plot the fitted occurrence probabilities
 
