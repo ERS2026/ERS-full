@@ -116,7 +116,7 @@ p1 <-Soil2026 |>
     y = "Layer thickness (cm)",
     title = "clay profile"
   ) +
-  theme_bw(base_size = 14) 
+  theme_bw(base_size = 9) 
 p1
 ```
 
@@ -134,9 +134,9 @@ p2 <- ggplot(
   PlantPres,
   aes(x = Point_ID, y = Species, color=Species)
 ) +
-  geom_point(size = 2) +
-  labs(x = NULL, y = NULL, title = "Species occurrence") +
-  theme_bw(base_size = 14) +
+  geom_point(size = 1.2) +
+  labs(x = NULL, y = NULL, title = "species occurrence") +
+  theme_bw(base_size = 9) +
   guides(color = "none") +
   scale_y_discrete(position = "right")
 p2
@@ -145,6 +145,12 @@ p2
 patchwork::wrap_plots(p2, p1, ncol = 1) +
   patchwork::plot_annotation(tag_levels = "A")
 
+
+# save the plot
+ggsave(
+  filename = here::here("figures", "10-GLM-species-occurrence.png"),
+  width = 1920, height = 1200, units = "px"
+)
 ```
 
 # 03 Explore species responses to elevation
