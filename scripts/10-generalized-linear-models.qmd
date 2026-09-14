@@ -92,6 +92,7 @@ FactVegClay2026_long
 Calculate the thickness of the sand and clay layers and display their depth along the transect.
 
 ```{r}
+# calculate and sand layer base elevation (elevation where the clay layer starts) and clay depth
 Soil2026 <- FactVegClay2026_wide |>
   dplyr::mutate(SandDepth_cm = 100 * Elevation_m - ClayDepth_cm) |>
   dplyr::select(Point_ID, SandDepth_cm, ClayDepth_cm) |>
@@ -101,6 +102,7 @@ Soil2026 <- FactVegClay2026_wide |>
     values_to = "LayerThickness_cm"
   )
 
+# plot the result as a stacked area plot
 p1 <-Soil2026 |>
   ggplot(aes(x = Point_ID, y = LayerThickness_cm, fill = SoilLayer)) +
   geom_area() +
