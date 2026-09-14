@@ -24,7 +24,6 @@ The appropriate linear model depends on:
 | **Grouped or repeated observations** | **Linear mixed model (LMM).** Adds random effects to account for dependence among observations from the same subjects, sites, years or other groups. The response is continuous, with approximately normally distributed residuals. | **Generalized linear mixed model (GLMM).** Combines a non-normal response distribution with random effects that account for grouped or repeated observations. |
 
 ```{r}
-# r syntax examples for these different models 
 #| eval: false
 
 # Linear model with predictor 'x'
@@ -60,9 +59,9 @@ model_glmm <- glmmTMB::glmmTMB(
 | **Type of response** | **Family** |
 |--------------------------------------------|----------------------------|
 | Continuous and approximately normal | `gaussian(link="identity")` |
-| Binary or successes out of a number of trials | `binomial``(link="logit")` |
+| Binary or successes out of a number of trials | ``` binomial``(link="logit") ``` |
 | Counts with variance approximately equal to the mean | `poisson(link="log")` |
-| Overdispersed counts (more zeros observed  than expected from the distribution) | `nbinom2(link="log)` |
+| Overdispersed counts (more zeros observed than expected from the distribution) | `nbinom2(link="log)` |
 | Positive continuous values without zeros | `Gamma(link = "log")` |
 | Non-negative continuous values including zeros | `tweedie(link = "log")` |
 
@@ -73,7 +72,7 @@ In Generalized Linear Models (GLMs) we let go of the assumption of Linear Models
 In general there is a connection between the type of response of y, the transformation that you apply to the predicted values, the assumed distribution of the residuals (with different assumptions on the relation between mean and variance of the residuals)
 
 | Type of response of y | Transformation of y | Distribution of residuals |
-|----|----|----|
+|------------------------|------------------------|------------------------|
 | Binomial | logit -\> log(P/1-P) | Bionomial |
 | Integers | log(y) | Poisson |
 | Continious larger or equal to zero | log(y) | Tweedie |
@@ -289,9 +288,6 @@ FactVegClay2026_long |>
 
 We find that the quadratic model fits significantly better for Glaux than the linear model (significant quadratic term). The blue line is the quadratic model, the red line is the linear model. The quadratic model predicts a peak in occurrence probability arround 1.22 m elevation.
 
-# 06 calculate the responses for all dominant species
-
-We can use the package DHARMa to check whether the model adequately describes how the probability of Glaux presence changes with elevation. - Not perfect here
 
 ```{r}
 glaux_residuals2 <- DHARMa::simulateResiduals(m.Glaux2)
@@ -303,22 +299,34 @@ DHARMa::plotResiduals(
 )
 ```
 
+
+We can use the package DHARMa to check whether the model adequately describes how the probability of Glaux presence changes with elevation. - Not perfect here
+
 There are some deviations from the expected uniform distribution of residuals, but overall the model seems to fit reasonably well. The residuals are not perfectly uniform, but there is no strong pattern with elevation.
 
 Because we want to do this for multiple species, define reusable functions to fit each candidate model and add response-scale predictions to the data. The predictions are probabilities of occurrence.
+
+# 06 calculate the responses for all dominant species
+
 
 ```{r}
 fit1 <- function(species_name, db = FactVegClay2026_long) {
   db |>
     dplyr::filter(Species == species_name) |>
-    glm(...
+    glm(
+      Present ~ Elevation_m,
+      family = binomial(link = "logit"),
+      data = _
     )
 }
 
 fit2 <- function(species_name, db = FactVegClay2026_long) {
   db |>
     dplyr::filter(Species == species_name) |>
-    glm(...
+    glm(
+      Present ~ Elevation_m + I(Elevation_m^2),
+      family = binomial(link = "logit"),
+      data = _
     )
 }
 
