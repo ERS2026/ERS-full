@@ -10,50 +10,45 @@ execute:
   warning: false
   message: false
 ---
-# 00 Introduction to Generalized Linear Models 
-In Generalized Linear Models (GLMs) we let go of the assumption of Linear Models (LMs) that the residuals need to be normally distributed. Instead they can follow a binomal distribution, poission distribution, negative binomial distribution, or various zero-inflated distributions. 
-Typically the type of regression you do in a GLM is named after the distribution. For example a logistic regression (bionomial distribution), poisson regression (poisson distribution), etc. 
+
+# 02 Introduction to Generalized Linear Models
+
+In Generalized Linear Models (GLMs) we let go of the assumption of Linear Models (LMs) that the residuals need to be normally distributed. Instead they can follow a binomal distribution, poission distribution, negative binomial distribution, or various zero-inflated distributions. Typically the type of regression you do in a GLM is named after the distribution. For example a logistic regression (bionomial distribution), poisson regression (poisson distribution), etc.
 
 You can use the following decision tree for determining the best GLM for your data, depending on a series of questions
 
-What kind of Y do I have?
+**What kind of response variable (Y) do I have?**
 
-Continuous
-├── Can be negative / approximately symmetric
-│      → Gaussian
-└── Non-negative
-       ├── No zeros
-       │      → Gamma
-       └── Exact zeros present
-              → Tweedie
-              OR hurdle model if zero and positive values
-                 represent different biological processes
+- **Continuous**
 
-Counts
-├── Variance ≈ mean
-│      → Poisson
-├── Variance > mean
-│      → Negative binomial
-└── More zeros than the count model predicts
-       → Zero-inflated Poisson
-       → Zero-inflated negative binomial
-       → or hurdle model
-Binary
-    → Binomial
+  - Can be negative / approximately symmetric → **Gaussian**
+  - Non-negative
+    - No zeros → **Gamma**
+    - Exact zeros present → **Tweedie**
+      - Or a **hurdle model** if zero and positive values represent different biological processes
 
-Proportion
-├── successes / number of trials
-│      → Binomial
-└── continuous proportion
-       → Beta regression
+- **Counts**
 
+  - Variance ≈ mean (at the same predictor values)→ **Poisson**
+  - Variance \> mean (at the same predictor values)→ **Negative binomial**
+  - More zeros than the count model predicts:
+    - **Zero-inflated Poisson**
+    - **Zero-inflated negative binomial**
+    - Or a **hurdle model**
 
-This exercise uses logistic regression to model the presence (1) or absence
-(0) of salt-marsh plant species (so binomial response) along a microtransect. We compare linear and quadratic elevation responses, make predictions, and visualise the fitted
-occurrence probabilities.
+- **Binary** → **Binomial**
 
-# 01 Setup your environment
+- **Proportion**
+
+  - Successes / number of trials → **Binomial**
+  - Continuous proportion → **Beta regression**
+
+This exercise uses logistic regression to model the presence (1) or absence (0) of salt-marsh plant species (so binomial response) along a microtransect. We compare linear and quadratic elevation responses, make predictions, and visualise the fitted occurrence probabilities.
+
+# 02 Setup your environment
+
 we will load the libraries glmmTMB for fitting GLMs and DHARMa for testing assumptions, as degree of zero-inflation etd
+
 ```{r}
 # Run the common setup script containing packages and helper functions.
 source(here::here("scripts", "01-setup.R"))
@@ -67,17 +62,17 @@ library(DHARMa)  # for checking assumptions of GLMs
 
 # 02 Read and prepare the data
 
-The `FactVegClay` table stores occurrence per species in wide format. Read the
-microtransect database, reshape the species columns to long format, and retain
-the 2025 observations (except `Salicornia.sp`).
+We read the `FactVegClay2026` table form the Microtransect database, which holds occurrence per species in wide format. We will reshape the species columns to long format, and retain the 2026 observations (except `Salicornia.sp`, as we use the separate 2 species.
 
 ```{r}
-# Database: MicrotransectDB
+# Read google sheets database: MicrotransectDB
 MicrotransectDB <- read_gsdb(
   "https://docs.google.com/spreadsheets/d/1dJkH09imko9RgOkGzYQT74IeGY56QwiXjjBl7u0KcK0/"
 )
+#filter to only 2026 data and write to new tibble
 FactVegClay2026_wide<-MicrotransectDB$FactVegClay |>
-  dplyr::filter(Year==2026)
+  dplyr::filter(Year == 2026)
+#pivot to long format
 FactVegClay2026_long <- MicrotransectDB$FactVegClay |>
   tidyr::pivot_longer(
     cols = -c(Point_ID:ClayDepth_cm),
@@ -90,8 +85,7 @@ FactVegClay2026_long <- MicrotransectDB$FactVegClay |>
 FactVegClay2026_long
 ```
 
-Calculate the thickness of the sand and clay layers and display their depth
-along the transect.
+Calculate the thickness of the sand and clay layers and display their depth along the transect.
 
 ```{r}
 Soil2026 <- FactVegClay2026_wide |>
@@ -111,14 +105,19 @@ p1 <-Soil2026 |>
     "SandDepth_cm" = "khaki",
     "ClayDepth_cm" = "saddlebrown"
   )) +
-  labs(x = "Distance along transect (m)",
-   y = "Layer thickness (cm)",
-   title="clay profile")
+  labs(
+    x = "Distance along transect (m)",
+    y = "Layer thickness (cm)",
+    title = "Clay profile"
+  ) +
+  theme_bw(base_size = 14) +
+  theme(
+    plot.title = element_text(size = 18, face = "bold")
+  )
 p1
 ```
 
-Show the observed occurrences of all species, then combine this figure with
-the soil profile.
+Show the observed occurrences of all species, then combine this figure with the soil profile.
 
 ```{r}
 PlantPres <- FactVegClay2026_long |>
@@ -139,8 +138,7 @@ p2 / p1
 
 # 03 Explore species responses to elevation
 
-Calculate the frequency of occurrence of each species in 2025 and select the
-six most common species for modelling.
+Calculate the frequency of occurrence of each species in 2025 and select the six most common species for modelling.
 
 ```{r}
 SpeciesFreq2026 <- FactVegClay2026_long |>
@@ -160,11 +158,9 @@ For a binary response, logistic regression models the log odds (logit) of occurr
 
 $$
 \log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 X_i
-$$
-Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1.
+$$ Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1.
 
-Do a logistic regression:
-First fit linear and quadratic elevation responses for *Glaux maritima*.
+Do a logistic regression: First fit linear and quadratic elevation responses for *Glaux maritima*.
 
 ```{r}
 m.Glaux1 <- FactVegClay2026_long |>
@@ -189,10 +185,9 @@ summary(m.Glaux2)
 AIC(m.Glaux1, m.Glaux2)
 ```
 
-We find that the quadratic model fits significantly better for Glaux than the linear model. 
+We find that the quadratic model fits significantly better for Glaux than the linear model.
 
-Because we want to do this for multiple species, define reusable functions to fit each candidate model and add response-scale
-predictions to the data. The predictions are probabilities of occurrence.
+Because we want to do this for multiple species, define reusable functions to fit each candidate model and add response-scale predictions to the data. The predictions are probabilities of occurrence.
 
 ```{r}
 fit1 <- function(species_name, db = FactVegClay2026_long) {
@@ -230,8 +225,7 @@ add_predictions <- function(species_name, model,
 }
 ```
 
-Inspect the two candidate models for each dominant species. If the quadratic term is significant, use the quadratic model, if only the linear term is significant, then use that model. Add the selected model  to the
-dataset.
+Inspect the two candidate models for each dominant species. If the quadratic term is significant, use the quadratic model, if only the linear term is significant, then use that model. Add the selected model to the dataset.
 
 ```{r}
 # Glaux maritima
@@ -296,9 +290,7 @@ FactVegClay2026_long <- add_predictions(
 
 ```
 
-We can use the package DHARMa  for model diagnostics (it is not for testing  predictor significance)
-For example, check dispersion, zero inflation, and outliers for one selected
-model. 
+We can use the package DHARMa for model diagnostics (it is not for testing predictor significance) For example, check dispersion, zero inflation, and outliers for one selected model.
 
 ```{r}
 glaux_residuals <- DHARMa::simulateResiduals(fit1("Glaux.maritima"), n = 1000)
@@ -308,8 +300,7 @@ DHARMa::testZeroInflation(glaux_residuals)
 DHARMa::testOutliers(glaux_residuals)
 ```
 
-Because for the dispersion test, $P > 0.05$, the test is not significant, so there is no evidence of overdispersion or underdispersion in this model. This is the desirable result for this diagnostic
-DHARMa::testZeroInflation(glaux_residuals) compares the number of observed zeros with the number expected under the fitted model. in this case, The ratio is almost exactly 1, meaning the model generated approximately the expected number of zeros. Since $p = 1$, there is no evidence of excess zero inflation in the Glaux maritima model.
+Because for the dispersion test, $P > 0.05$, the test is not significant, so there is no evidence of overdispersion or underdispersion in this model. This is the desirable result for this diagnostic DHARMa::testZeroInflation(glaux_residuals) compares the number of observed zeros with the number expected under the fitted model. in this case, The ratio is almost exactly 1, meaning the model generated approximately the expected number of zeros. Since $p = 1$, there is no evidence of excess zero inflation in the Glaux maritima model.
 
 # 05 Plot the fitted occurrence probabilities
 
