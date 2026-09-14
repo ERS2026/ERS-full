@@ -11,6 +11,10 @@ execute:
   message: false
 ---
 
+# 01 Type of Linear Models
+
+introduction
+
 # 02 Introduction to Generalized Linear Models
 
 In Generalized Linear Models (GLMs) we let go of the assumption of Linear Models (LMs) that the residuals need to be normally distributed. Instead they can follow a binomal distribution, poission distribution, negative binomial distribution, or various zero-inflated distributions. Typically the type of regression you do in a GLM is named after the distribution. For example a logistic regression (bionomial distribution), poisson regression (poisson distribution), etc.
@@ -43,11 +47,9 @@ You can use the following decision tree for determining the best GLM for your da
   - Successes / number of trials → **Binomial**
   - Continuous proportion → **Beta regression**
 
-This exercise uses logistic regression to model the presence (1) or absence (0) of salt-marsh plant species (so binomial response) along a microtransect. We compare linear and quadratic elevation responses, make predictions, and visualise the fitted occurrence probabilities.
-
 # 02 Setup your environment
 
-we will load the libraries glmmTMB for fitting GLMs and DHARMa for testing assumptions, as degree of zero-inflation etd
+We will load the libraries glmmTMB for fitting GLMs and DHARMa for testing assumptions, as degree of zero-inflation etd
 
 ```{r}
 # Run the common setup script containing packages and helper functions.
@@ -60,7 +62,9 @@ library(glmmTMB) # for fitting generalized linear models (GLMs)
 library(DHARMa)  # for checking assumptions of GLMs
 ```
 
-# 02 Read and prepare the data
+# 02 Read, prepare and explore the data
+
+In the rest of this script we will use logistic regression (a generalized linear model for binomial response variables) to model the presence (1) or absence (0) of salt-marsh plant species in response to elevation along the microtransect. We compare linear and quadratic elevation responses, make predictions, and visualise the fitted occurrence probabilities in response to elevation
 
 We read the `FactVegClay2026` table form the Microtransect database, which holds occurrence per species in wide format. We will reshape the species columns to long format, and retain the 2026 observations (except `Salicornia.sp`, as we use the separate 2 species.
 
@@ -108,12 +112,9 @@ p1 <-Soil2026 |>
   labs(
     x = "Distance along transect (m)",
     y = "Layer thickness (cm)",
-    title = "Clay profile"
+    title = "clay profile"
   ) +
-  theme_bw(base_size = 14) +
-  theme(
-    plot.title = element_text(size = 18, face = "bold")
-  )
+  theme_bw(base_size = 14) 
 p1
 ```
 
@@ -130,10 +131,13 @@ p2 <- ggplot(
 ) +
   geom_point(size = 2) +
   labs(x = NULL, y = 'species', title='species occurrence') +
-  theme(axis.text.x = element_blank(), axis.text.y = element_blank())
+  theme_bw(base_size = 14) 
 p2
+
 # combine the ggplot objects in one plot with the patchwork package
-p2 / p1
+patchwork::wrap_plots(p2, p1, ncol = 1) +
+  patchwork::plot_annotation(tag_levels = "A")
+
 ```
 
 # 03 Explore species responses to elevation
@@ -158,10 +162,9 @@ For a binary response, logistic regression models the log odds (logit) of occurr
 
 $$
 \log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 X_i
-$$ Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1.
-# 05 example: logistic regression of Glaux maritima occurrence along the elevation gradient
+$$ Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1. \# 05 example: logistic regression of Glaux maritima occurrence along the elevation gradient
 
-Do a logistic regression:  fit linear and quadratic elevation response models for *Glaux maritima*.
+Do a logistic regression: fit linear and quadratic elevation response models for *Glaux maritima*.
 
 ```{r}
 m.Glaux1 <- FactVegClay2026_long |>
@@ -213,6 +216,8 @@ FactVegClay2026_long |>
 ```
 
 We find that the quadratic model fits significantly better for Glaux than the linear model (significant quadratic term). The blue line is the quadratic model, the red line is the linear model. The quadratic model predicts a peak in occurrence probability arround 1.22 m elevation.
+
+# 06 calculate the responses for all dominant species
 
 We can use the package DHARMa to check whether the model adequately describes how the probability of Glaux presence changes with elevation. - Not perfect here
 
@@ -272,27 +277,27 @@ Inspect the two candidate models for each dominant species. If the quadratic ter
 # Glaux maritima
 summary(fit1("Glaux.maritima"))
 summary(fit2("Glaux.maritima"))
-FactVegClay2026_long<-add_predictions("Glaux.maritima", fit1("Glaux.maritima"))
+FactVegClay2026_long<-add_predictions("Glaux.maritima", fit2("Glaux.maritima"))
 
 # Limonium vulgare
 summary(fit1("Limonium.vulgare"))
 summary(fit2("Limonium.vulgare"))
 FactVegClay2026_long <- add_predictions(
-  "Limonium.vulgare", fit1("Limonium.vulgare")
+  "Limonium.vulgare", fit2("Limonium.vulgare")
 )
 
 # Plantago maritima
 summary(fit1("Plantago.maritima"))
 summary(fit2("Plantago.maritima"))
 FactVegClay2026_long <- add_predictions(
-  "Plantago.maritima", fit2("Plantago.maritima")
+  "Plantago.maritima", fit1("Plantago.maritima")
 )
 
 # Puccinellia maritima
 summary(fit1("Puccinellia.maritima"))
 summary(fit2("Puccinellia.maritima"))
 FactVegClay2026_long <- add_predictions(
-  "Puccinellia.maritima", fit1("Puccinellia.maritima")
+  "Puccinellia.maritima", fit2("Puccinellia.maritima")
 )
 
 # Salicornia europaea
@@ -331,8 +336,6 @@ FactVegClay2026_long <- add_predictions(
 
 ```
 
-
-
 # 05 Plot the fitted occurrence probabilities
 
 ```{r}
@@ -356,6 +359,9 @@ p5 <- FactVegClay2026_long |>
   ylim(0, 1)
 p5
 
-# Combine the final two plots vertically.
-p4 / p5
+# Combine the final two plots vertically with the patchwork.
+patchwork::wrap_plots(p5, p4, ncol = 1) +
+  patchwork::plot_annotation(tag_levels = "A")
+# shortcut:
+p5 / p4 
 ```
