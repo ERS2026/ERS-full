@@ -59,10 +59,10 @@ model_glmm <- glmmTMB::glmmTMB(
 
 | **Type of response** | **Family** |
 |--------------------------------------------|----------------------------|
-| Continuous and approximately normal | `gaussian` |
-| Binary or successes out of a number of trials | `binomial` |
-| Counts with variance approximately equal to the mean | `poisson` |
-| Overdispersed counts | `nbinom2` |
+| Continuous and approximately normal | `gaussian(link="identity")` |
+| Binary or successes out of a number of trials | `binomial``(link="logit")` |
+| Counts with variance approximately equal to the mean | `poisson(link="log")` |
+| Overdispersed counts (more zeros observed  than expected from the distribution) | `nbinom2(link="log)` |
 | Positive continuous values without zeros | `Gamma(link = "log")` |
 | Non-negative continuous values including zeros | `tweedie(link = "log")` |
 
@@ -311,20 +311,14 @@ Because we want to do this for multiple species, define reusable functions to fi
 fit1 <- function(species_name, db = FactVegClay2026_long) {
   db |>
     dplyr::filter(Species == species_name) |>
-    glmmTMB::glmmTMB(
-      Present ~ Elevation_m,
-      family = binomial(link = "logit"),
-      data = _
+    glm(...
     )
 }
 
 fit2 <- function(species_name, db = FactVegClay2026_long) {
   db |>
     dplyr::filter(Species == species_name) |>
-    glmmTMB::glmmTMB(
-      Present ~ Elevation_m + I(Elevation_m^2),
-      family = binomial(link = "logit"),
-      data = _
+    glm(...
     )
 }
 
@@ -432,10 +426,6 @@ p5 <- FactVegClay2026_long |>
 p5
 
 # Combine the final two plots vertically with the patchwork.
-patchwork::wrap_plots(p5, p4, ncol = 1) +
-  patchwork::plot_annotation(tag_levels = "A")
-# shortcut:
-p5 / p4 
 
 ggsave(
   filename = here::here("figures/ERS2026-Script10", "10-GLM-species-occurrence-predictions.png"),
