@@ -13,7 +13,58 @@ execute:
 
 # 01 Type of Linear Models
 
-introduction
+The appropriate linear model depends on:
+
+1.  Whether the response is continuous with approximately normal residuals or requires another distribution.
+2.  Whether observations are independent or grouped/repeated.
+
+|   | **Continuous response; approximately normal residuals** | **Non-normal response, requires other distribution** |
+|------------------|-----------------------------|-------------------------|
+| **Independent observations** | **Linear model (LM).** Uses fixed effects only. Assumes independent observations, approximately normally distributed residuals and constant residual variance. This category includes linear regression, *t*-tests and 1-way ANOVA, n-way ANOVA and ANCOVA | **Generalized linear model (GLM).** Uses fixed effects only. Uses a response distribution and link function appropriate for the data, such as binomial for binary data, Poisson for counts or Gamma for positive continuous data. |
+| **Grouped or repeated observations** | **Linear mixed model (LMM).** Adds random effects to account for dependence among observations from the same subjects, sites, years or other groups. The response is continuous, with approximately normally distributed residuals. | **Generalized linear mixed model (GLMM).** Combines a non-normal response distribution with random effects that account for grouped or repeated observations. |
+
+```{r}
+# r syntax examples for these different models 
+#| eval: false
+
+# Linear model with predictor 'x'
+model_lm <- stats::lm(
+  y ~ x,
+  data = dat
+)
+
+# Generalized linear model with predictor x
+model_glm <- stats::glm(
+  y ~ x,
+  family = binomial, # depends on type of y
+  data = dat
+)
+
+# Linear mixed model with fixed predictor 'x' and random predictor 'group'
+model_lmm <- glmmTMB::glmmTMB(
+  y ~ x + (1 | group),
+  family = gaussian, # depends on type of y
+  data = dat
+)
+
+# Generalized linear mixed model with fixed predictor 'x' and random predictor 'group'
+model_glmm <- glmmTMB::glmmTMB(
+  y ~ x + (1 | group),
+  family = binomial, # depends on type of y
+  data = dat
+)
+```
+
+**Common distributions**
+
+| **Type of response** | **Family** |
+|--------------------------------------------|----------------------------|
+| Continuous and approximately normal | `gaussian` |
+| Binary or successes out of a number of trials | `binomial` |
+| Counts with variance approximately equal to the mean | `poisson` |
+| Overdispersed counts | `nbinom2` |
+| Positive continuous values without zeros | `Gamma(link = "log")` |
+| Non-negative continuous values including zeros | `tweedie(link = "log")` |
 
 # 02 Introduction to Generalized Linear Models
 
@@ -148,7 +199,7 @@ patchwork::wrap_plots(p2, p1, ncol = 1) +
 
 # save the plot
 ggsave(
-  filename = here::here("figures", "10-GLM-species-occurrence.png"),
+  filename = here::here("figures/ERS2026-Script10", "10-GLM-species-occurrence.png"),
   width = 1920, height = 1200, units = "px"
 )
 ```
@@ -377,4 +428,9 @@ patchwork::wrap_plots(p5, p4, ncol = 1) +
   patchwork::plot_annotation(tag_levels = "A")
 # shortcut:
 p5 / p4 
+
+ggsave(
+  filename = here::here("figures/ERS2026-Script10", "10-GLM-species-occurrence-predictions.png"),
+  width = 1920, height = 1200, units = "px"
+)
 ```
