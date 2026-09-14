@@ -68,7 +68,15 @@ model_glmm <- glmmTMB::glmmTMB(
 
 # 02 Introduction to Generalized Linear Models
 
-In Generalized Linear Models (GLMs) we let go of the assumption of Linear Models (LMs) that the residuals need to be normally distributed. Instead they can follow a binomal distribution, poission distribution, negative binomial distribution, or various zero-inflated distributions. Typically the type of regression you do in a GLM is named after the distribution. For example a logistic regression (bionomial distribution), poisson regression (poisson distribution), etc.
+In Generalized Linear Models (GLMs) we let go of the assumption of Linear Models (LMs) that the residuals need to be normally distributed. Instead they can follow a binomal distribution, poission distribution, negative binomial distribution, or various zero-inflated distributions. Typically the type of regression you do in a GLM is named after the distribution. For example a logistic regression (bionomial distribution), poisson regression (poisson distribution), etc. The model you use depends on the **type of response variable you have**, and the **distribution of the residuals**. Together these two factors determine the type of GLM you should use, that typically connects a particular transformation of the response variable to a linear combination of predictors. The transformation is called the **link function**. For example, in logistic regression the logit link function transforms the probability of occurrence to log odds, which can then be modelled as a linear combination of predictors. In Poisson regression the log link function transforms the expected count to a linear combination of predictors. The transformation typically depends on the distribution of the response variable, and is chosen to ensure that the predicted values are in the correct range (e.g. probabilities between 0 and 1, counts greater than or equal to 0).
+
+In general there is a connection between the type of response of y, the transformation that you apply to the predicted values, the assumed distribution of the residuals (with different assumptions on the relation between mean and variance of the residuals)
+
+| Type of response of y | Transformation of y | Distribution of residuals |
+|----|----|----|
+| Binomial | logit -\> log(P/1-P) | Bionomial |
+| Integers | log(y) | Poisson |
+| Continious larger or equal to zero | log(y) | Tweedie |
 
 You can use the following decision tree for determining the best GLM for your data, depending on a series of questions
 
@@ -76,26 +84,26 @@ You can use the following decision tree for determining the best GLM for your da
 
 - **Continuous**
 
-  - Can be negative / approximately symmetric → **Gaussian**
+  - Can be negative / approximately symmetric → **Gaussian glm**
   - Non-negative
-    - No zeros → **Gamma**
-    - Exact zeros present → **Tweedie**
+    - No zeros → **Gamma glm**
+    - Exact zeros present → **Tweedie glm**
       - Or a **hurdle model** if zero and positive values represent different biological processes
 
 - **Counts**
 
-  - Variance ≈ mean (at the same predictor values)→ **Poisson**
-  - Variance \> mean (at the same predictor values)→ **Negative binomial**
+  - Variance ≈ mean (at the same predictor values)→ **Poisson glm (poisson regression)**
+  - Variance \> mean (at the same predictor values)→ **Negative binomial glm**
   - More zeros than the count model predicts:
-    - **Zero-inflated Poisson**
-    - **Zero-inflated negative binomial**
+    - **Zero-inflated Poisson glm**
+    - **Zero-inflated negative binomial glm**
     - Or a **hurdle model**
 
-- **Binary** → **Binomial**
+- **Binary** → **Binomial glm (logistic regression)**
 
 - **Proportion**
 
-  - Successes / number of trials → **Binomial**
+  - Successes / number of trials → **Binomial glm (logistic regression)**
   - Continuous proportion → **Beta regression**
 
 # 02 Setup your environment
@@ -106,10 +114,10 @@ We will load the libraries glmmTMB for fitting GLMs and DHARMa for testing assum
 # Run the common setup script containing packages and helper functions.
 source(here::here("scripts", "01-setup.R"))
 
-# Authenticate your @student.rug.nl Google account.
+# Authenticate your Google account.
 gsheets_auth()
 
-library(glmmTMB) # for fitting generalized linear models (GLMs)
+# load required library
 library(DHARMa)  # for checking assumptions of GLMs
 ```
 
