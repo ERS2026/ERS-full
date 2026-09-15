@@ -98,7 +98,7 @@ SoilDB$FactRedox2026
 
 # read moisture and sality
 SoilDB$FactMoistureSalinity2026<-SoilDB$FactMoistureSalinity |>
-  dplyr::filter(Year==2026 & TransectPoint_ID <= 1150) |>
+  dplyr::filter(Year==2026 & TransectPoint_ID <= 1150 ) |>
   dplyr::group_by(TransectPoint_ID) |>
   dplyr::summarize(perc_water=mean(perc_water,na.rm=T),
                   conductivity=mean(conductivity_mSm,na.rm=TRUE)
@@ -127,7 +127,9 @@ envdat2026 <-
                 TransProb=round(TransProb,3),
                 Clay_cm=ifelse(is.na(Clay_cm),0,Clay_cm)) |>
   # convert to dataframe with row names required by vegan
-  tibble::column_to_rownames(var="TransectPoint_ID")  
+  tibble::column_to_rownames(var="TransectPoint_ID")  |>
+  #only retain complete cases
+  tidyr::drop_na()
 print(envdat2026)  
 
 # so for ordination with functions from the vegan library you need an separate environmental factors dataset
@@ -141,9 +143,9 @@ print(vegdat2026)
 
 ```{r}
 # using the pearson correlation coefficient
-psych::pairs.panels(envdat,smooth=F,ci=T,ellipses=F,stars=T,method="pearson")
+psych::pairs.panels(envdat2026,smooth=F,ci=T,ellipses=F,stars=T,method="pearson")
 # using the spearman rank-correlation coefficient
-psych::pairs.panels(envdat,smooth=F,ci=T,ellipses=F,stars=T,method="spearman")
+psych::pairs.panels(envdat2026,smooth=F,ci=T,ellipses=F,stars=T,method="spearman")
 # note that the units are very different! 
 
 ```
@@ -155,7 +157,7 @@ psych::pairs.panels(envdat,smooth=F,ci=T,ellipses=F,stars=T,method="spearman")
 # use .scale=T for datasets where the variables are measured in different use
 
 # do a principal component analysis (pca) 
-pca_env<-prcomp(envdat,center=T,scale=T)
+pca_env<-prcomp(envdat2026,center=T,scale=T)
 pca_env
 summary(pca_env)
 # show the site scores for axis 1
