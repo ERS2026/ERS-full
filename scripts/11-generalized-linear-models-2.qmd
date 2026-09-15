@@ -28,6 +28,10 @@ search()
 
 # authenticate your @student.rug.nl google account
 gsheets_auth()
+
+# load libraries used in this script
+library(DHARMa)
+
 ```
 
 # 02 Read and combine the data
@@ -121,48 +125,54 @@ Explore how the cockle density changes with elevation.
 linreg <- stats::lm(cockle_count ~ Elevation_m, data = CockleCount2026)
 summary(linreg)
 
-# The model is not significant. We would conclude that there is no evidence for a linear relation between cockle count and elevation.
-# but check the q-q plot of the residuals to see whether the assumptions of the linear model are met (Gaussian distribution of residuals)
-ggplot2::ggplot(linreg, aes(sample = .stdresid)) +
-  geom_qq() +
-  geom_qq_line() +
-  labs(x = "theoretical quantiles", y = "standardized residuals") +
-  theme(text = element_text(size = 10))
-# to test if there is a significant deviation from a normal distribution: 
+# to test if the residuals show  a significant deviation from a normal distribution: 
 stats::shapiro.test(residuals(linreg))
-
 
 # This suggests that the residuals are not normally distributed, so the assumptions of the linear model are not met. We therefore fit a count model with a negative-binomial type 2 distribution, which allows the variance to increase quadratically with the mean.
 
-CockleCount2026 |>
+glm1<-CockleCount2026 |>
   dplyr::filter(Elevation_m > 0.25) |>
   glmmTMB::glmmTMB(
     cockle_count ~ Elevation_m,
-    family = glmmTMB::nbinom2(link = "log"),
+    family = stats::poisson(link = "log"),
     data = _
-  ) -> glm1
+  ) 
 summary(glm1) 
 
+# check the conditions and assumptions of the model
+simres_glm1 <- DHARMa::simulateResiduals(fittedModel = glm1, n = 1000)
+DHARMa::testUniformity(simres_glm1)
+# this doesn't look good, the residuals are not uniformly distributed, and there is a clear pattern in the residuals, indicating that the model does not fit the data well. 
+DHARMa::testDispersion(simres_glm1)
+# doesn't look good either, disperson test show significant overdispersion (variance>mean)
+DHARMa::testZeroInflation(simres_glm1)
+# this is ok - no significant zero-inflation
+
 # check if the model improves if we add a quadratic term (second-order polynomial) to the model, to test for a unimodal relation between cockle count and elevation.
-CockleCount2026 |> 
+
+glm2<-CockleCount2026 |> 
   dplyr::filter(Elevation_m > 0.25) |>  #remove the outlier transect+id with very low elevation, not representative 
-  glm(cockle_count ~ Elevation_m + I(Elevation_m^2), data = _, family = "poisson") -> glm2
+  glmmTMB::glmmTMB(
+    cockle_count ~ Elevation_m + I(Elevation_m^2), 
+    family = "poisson",
+    data = _) 
 summary(glm2) 
+AIC(glm1,glm2)
 
-# yes the quadratic term is significant, so we conclude that there is a unimodal relation between cockle count and elevation. Also the AIC is lower for the quadratic model, indicating a better fit. We will therefore use this model to predict the number of cockles per transectpoint as a function of elevation.
+# yes the quadratic term is significant, so we conclude that there is a unimodal relation between cockle count and elevation. Also the AIC is much lower for the quadratic model, indicating a better fit. 
+# but we again want to  check the assumptions of this model: uniformity (q-q plot) and dispersion of residuals (mean=variance)
 
-# check the q-q plot of the residuals to see whether the assumptions of the GLM are met, using simulated residuals from the DHARMa package, which is more appropriate for GLMs than the standard residuals.
-library(DHARMa)
 simres_glm2 <- DHARMa::simulateResiduals(fittedModel = glm2, n = 1000)
 DHARMa::testUniformity(simres_glm2)
+# this still doesn't look good, the residuals are not uniformly distributed, and there is a clear pattern in the residuals, indicating that the model does not fit the data well. 
 DHARMa::testDispersion(simres_glm2)
-# this doesn't look good, the residuals are not uniformly distributed, and there is a clear pattern in the residuals, indicating that the model does not fit the data well. We will therefore test for  dispersion of the residuals using the DHARMa package (check if the variance is larger than the mean, which would indicate overdispersion, and therefore that the Poisson distribution is not appropriate for these data).
+# doesn't still look good either, disperson test show significant overdispersion (variance>mean)
+DHARMa::testZeroInflation(simres_glm3)
+# this is ok - no significant zero-inflation
 
 
+# because of the lack of uniformity and overdispersion, we  try to fit a negative binomial model instead of a Poisson model that can better deal with these issues, as variance>mean of residuals
 
-# we find that the dispersion parameter is much larger than 1, this indicates overdispersion, so  the variance of the residuals is larger than the mean, and therefore the Poisson distribution is not appropriate for these data. In that case we can try to fit a negative binomial model instead of a Poisson model.
-
-#Fit a negative bionomial model, to account for overdispersion (variance>mean)
 CockleCount2026 |>
   dplyr::filter(Elevation_m > 0.25) |>
   glmmTMB::glmmTMB(
@@ -176,8 +186,27 @@ simres_glm3 <- DHARMa::simulateResiduals(fittedModel = glm3, n = 1000)
 DHARMa::testDispersion(simres_glm3)
 DHARMa::testUniformity(simres_glm3)
 DHARMa::testZeroInflation(simres_glm3)
+AIC(glm2,glm3)
 
 # now all important assumptions of the GLM are met, so we can use this model to predict the number of cockles per transectpoint as a function of elevation.
+
+# in case you want to check if adding the zero-inflation to the model would improve it (although there was no sign of it)
+CockleCount2026 |>
+  dplyr::filter(Elevation_m > 0.25) |>
+  glmmTMB::glmmTMB(
+    cockle_count ~ Elevation_m + I(Elevation_m^2),
+    ziformula = ~1,
+    family = glmmTMB::nbinom2(link = "log"),
+    data = _
+  ) -> glm4
+summary(glm4)
+# test the dispersion of the residuals of the negative binomial model, to see if the model fits the data better than the Poisson model.
+simres_glm4 <- DHARMa::simulateResiduals(fittedModel = glm4, n = 1000)
+DHARMa::testDispersion(simres_glm4)
+DHARMa::testUniformity(simres_glm4)
+DHARMa::testZeroInflation(simres_glm4)
+AIC(glm3,glm4)
+# AIC of this model is higher, the extra complexity is not justified by better fit
 
 # glmmTMB is not available within geom_smooth, so we will use the glm3 model to predict the number of cockles per transectpoint as a function of elevation, and plot the predicted values along with the observed values.
 
@@ -191,20 +220,17 @@ prediction_grid <- data.frame(
 ) |>
   dplyr::filter(Elevation_m > 0.25)
 
-prediction_grid$predicted_glm1 <- predict(
-  glm1,
-  newdata = prediction_grid,
-  type = "response"
+# put the four different fitted models together in a list
+models <- list(
+  glm1 = glm1,
+  glm2 = glm2,
+  glm3 = glm3
 )
 
-prediction_grid$predicted_glm2 <- predict(
-  glm2,
-  newdata = prediction_grid,
-  type = "response"
-)
-
-prediction_grid$predicted_glm3 <- predict(
-  glm3,
+# add the predicted values of each of the three models to the prediction grid
+prediction_grid[paste0("predicted_", names(models))] <- lapply(
+  models,
+  predict,
   newdata = prediction_grid,
   type = "response"
 )
@@ -217,6 +243,7 @@ predictions_long <- prediction_grid |>
   )
 predictions_long
 
+# plot the observation with the three models 
 CockleCount2026 |>
   dplyr::filter(Elevation_m > 0.25) |>
   ggplot2::ggplot(aes(x = Elevation_m, y = cockle_count)) +
@@ -230,7 +257,7 @@ CockleCount2026 |>
     x = "Elevation (m + NAP)",
     y = "number of cockles per 0.068 m2",
     color = "Model",
-    title = "Predicted cockle counts as a function of elevation"
+    title = "Predicted cockle counts as a function of elevation (glm3 is the preferred model)"
   ) +
   theme(text = element_text(size = 10))
 
