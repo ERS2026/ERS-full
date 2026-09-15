@@ -148,6 +148,12 @@ summary(glm2)
 
 # yes the quadratic term is significant, so we conclude that there is a unimodal relation between cockle count and elevation. Also the AIC is lower for the quadratic model, indicating a better fit. We will therefore use this model to predict the number of cockles per transectpoint as a function of elevation.
 
+# check the q-q plot of the residuals to see whether the assumptions of the GLM are met, using simulated residuals from the DHARMa package, which is more appropriate for GLMs than the standard residuals.
+library(DHARMa)
+simres <- DHARMa::simulateResiduals(fittedModel = glm2, n = 1000)
+plot(simres)
+
+
 CockleCount2026 |> 
   dplyr::filter(Elevation_m > 0.25) |>  #remove the outlier transect+id with very low elevation, not representative 
   ggplot2::ggplot(aes(x = Elevation_m, y = cockle_count)) +
