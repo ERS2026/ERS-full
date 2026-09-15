@@ -50,17 +50,20 @@ data at the Schiermonnikoog pier, for the Schiermonnikoog tidal data
 # Read Database ERS-Schier_tides (takes more than 10 minutes)
 read_gsdb("https://docs.google.com/spreadsheets/d/1DOzvscotzWXm5MmEFrZhvPY820weEZVcSfUYz_5Gyf4", 
           sheets="FactSeaLevel", separate=TRUE)
-FactSeaLevel
+FactSealevel<-read_csv("c://Users/holff/Downloads/factSeaLevel.csv") |>
+  dplyr::mutate(DateTime = lubridate::ymd_hms(DateTime)) # convert the DateTime column to a date-time object
+tail(FactSealevel, 10) # show the last record of this tiblle
+names(FactSealevel)
 
 # Re-format the data for further use.
-FactSeaLevel |>
+FactSealevel2 <- FactSealevel |>
   dplyr::mutate(
     Sealevel_cm = ifelse(Sealevel_cm > 1000, NA, Sealevel_cm), # set missing or incorrect values to NA
     Sealevel_m = Sealevel_cm / 100, # cm to m + NAP
     Year = lubridate::year(DateTime),
     Month = lubridate::month(DateTime)
-                ) |>
-    dplyr::select(-Sealevel_cm) -> FactSealevel2
+) |>
+    dplyr::select(-Sealevel_cm) 
 FactSealevel2
 max(FactSealevel2$DateTime, na.rm = TRUE) # check the last date in the dataset
 ```
@@ -72,7 +75,7 @@ years.
 
 ```{r}
 FactSealevel2 |>
-  dplyr::filter(Month >= 4 & Month < 9 & Year %in% 2018:2025 & !is.na(Sealevel_m)) |>
+  dplyr::filter(Month >= 4 & Month < 9 & Year %in% 2018:2026 & !is.na(Sealevel_m)) |>
   ggplot(aes(x = Sealevel_m)) + # histogram of tidal heights during this period
   geom_histogram(alpha = 0.5, fill = "blue", binwidth = 0.2) +
   facet_wrap(~Year, nrow = 2) +
@@ -96,6 +99,8 @@ FactSealevel2 |>
     TransProb = round((1 - TransFreq / Summer_n), 3) # transgression probability of each elevation in a year
   ) -> FloodProb
 FloodProb
+# show the last record of this tiblle
+tail(FloodProb, 1)
 
 # Write the result to a csv file. This file goes into the
 # `SchierTideDB` database and needs updating every year.
