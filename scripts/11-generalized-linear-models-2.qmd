@@ -291,7 +291,7 @@ CockleCount2026 |>
     x = "Elevation (m + NAP)",
     y = "number of cockles per 0.068 m2",
     color = "Transect point / model",
-    title = "Predicted cockle counts as a function of elevation (glm3 is the preferred model)"
+    title = "Predicted cockle counts as a function of elevation (glm5 is the preferred model)"
   ) +
   scale_color_manual(values = color_values) +
   theme(text = element_text(size = 10))
