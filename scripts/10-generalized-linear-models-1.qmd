@@ -19,7 +19,7 @@ The appropriate linear model depends on:
 2.  Whether observations are independent or grouped/repeated.
 
 |   | **Continuous response; approximately normal residuals** | **Non-normal response, requires other distribution** |
-|------------------|-----------------------------|-------------------------|
+|-------------------|-----------------------------|-------------------------|
 | **Independent observations** | **Linear model (LM).** Uses fixed effects only. Assumes independent observations, approximately normally distributed residuals and constant residual variance. This category includes linear regression, *t*-tests and 1-way ANOVA, n-way ANOVA and ANCOVA | **Generalized linear model (GLM).** Uses fixed effects only. Uses a response distribution and link function appropriate for the data, such as binomial for binary data, Poisson for counts or Gamma for positive continuous data. |
 | **Grouped or repeated observations** | **Linear mixed model (LMM).** Adds random effects to account for dependence among observations from the same subjects, sites, years or other groups. The response is continuous, with approximately normally distributed residuals. | **Generalized linear mixed model (GLMM).** Combines a non-normal response distribution with random effects that account for grouped or repeated observations. |
 
@@ -231,8 +231,7 @@ DomSpec
 
 For a binary response, logistic regression models the log odds (logit) of occurrence.
 
-$$\log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 X_i$$
-Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1. \# 05 example: logistic regression of Glaux maritima occurrence along the elevation gradient
+$$\log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 X_i$$ Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1. \# 05 example: logistic regression of Glaux maritima occurrence along the elevation gradient
 
 Do a logistic regression: fit linear and quadratic elevation response models for *Glaux maritima*.
 

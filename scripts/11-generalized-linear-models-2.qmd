@@ -110,7 +110,7 @@ CockleCount2026 |>
   theme(text = element_text(size = 10))
 ```
 
-Note the large variation between the replicate plots#
+Note the large variation between the replicate plots
 
 # 04 Model the relation between cockle count and elevation
 
@@ -132,11 +132,15 @@ ggplot2::ggplot(linreg, aes(sample = .stdresid)) +
 stats::shapiro.test(residuals(linreg))
 
 
-# this suggestes that the residuals are not at all normally distributed, and therefore the assumptions of the linear model are not met. We will therefore fit a generalized linear model (GLM) with a Poisson distribution, which is more appropriate for count data.
+# This suggests that the residuals are not normally distributed, so the assumptions of the linear model are not met. We therefore fit a count model with a negative-binomial type 2 distribution, which allows the variance to increase quadratically with the mean.
 
-CockleCount2026 |> 
-  dplyr::filter(Elevation_m > 0.25) |>  #remove the outlier transect+id with very low elevation, not representative 
-  glm(cockle_count ~ Elevation_m, data = _, family = "poisson") -> glm1
+CockleCount2026 |>
+  dplyr::filter(Elevation_m > 0.25) |>
+  glmmTMB::glmmTMB(
+    cockle_count ~ Elevation_m,
+    family = glmmTMB::nbinom2(link = "log"),
+    data = _
+  ) -> glm1
 summary(glm1) 
 
 # check if the model improves if we add a quadratic term (second-order polynomial) to the model, to test for a unimodal relation between cockle count and elevation.
@@ -149,24 +153,84 @@ summary(glm2)
 
 # check the q-q plot of the residuals to see whether the assumptions of the GLM are met, using simulated residuals from the DHARMa package, which is more appropriate for GLMs than the standard residuals.
 library(DHARMa)
-simres <- DHARMa::simulateResiduals(fittedModel = glm2, n = 1000)
-plot(simres)
-# this doesn't look good, the residuals are not uniformly distributed, and there is a clear pattern in the residuals, indicating that the model does not fit the data well. We will therefore test for uniformity and dispersion of the residuals using the DHARMa package.
-
-# test for uniformity and dispersion of the residuals. A Poisson distribution assumes that the variance is equal to the mean, and therefore the dispersion parameter should be close to 1. If the dispersion parameter is larger than 1, this indicates overdispersion, which means that the variance is larger than the mean, and therefore the Poisson distribution is not appropriate for these data. In that case we can try to fit a negative binomial model instead of a Poisson model.
-DHARMa::testDispersion(simres)
+simres_glm2 <- DHARMa::simulateResiduals(fittedModel = glm2, n = 1000)
+DHARMa::testUniformity(simres_glm2)
+DHARMa::testDispersion(simres_glm2)
+# this doesn't look good, the residuals are not uniformly distributed, and there is a clear pattern in the residuals, indicating that the model does not fit the data well. We will therefore test for  dispersion of the residuals using the DHARMa package (check if the variance is larger than the mean, which would indicate overdispersion, and therefore that the Poisson distribution is not appropriate for these data).
 
 
 
-CockleCount2026 |> 
-  dplyr::filter(Elevation_m > 0.25) |>  #remove the outlier transect+id with very low elevation, not representative 
+# we find that the dispersion parameter is much larger than 1, this indicates overdispersion, so  the variance of the residuals is larger than the mean, and therefore the Poisson distribution is not appropriate for these data. In that case we can try to fit a negative binomial model instead of a Poisson model.
+
+#Fit a negative bionomial model, to account for overdispersion (variance>mean)
+CockleCount2026 |>
+  dplyr::filter(Elevation_m > 0.25) |>
+  glmmTMB::glmmTMB(
+    cockle_count ~ Elevation_m + I(Elevation_m^2),
+    family = glmmTMB::nbinom2(link = "log"),
+    data = _
+  ) -> glm3
+summary(glm3)
+# test the dispersion of the residuals of the negative binomial model, to see if the model fits the data better than the Poisson model.
+simres_glm3 <- DHARMa::simulateResiduals(fittedModel = glm3, n = 1000)
+DHARMa::testDispersion(simres_glm3)
+DHARMa::testUniformity(simres_glm3)
+DHARMa::testZeroInflation(simres_glm3)
+
+# now all important assumptions of the GLM are met, so we can use this model to predict the number of cockles per transectpoint as a function of elevation.
+
+# glmmTMB is not available within geom_smooth, so we will use the glm3 model to predict the number of cockles per transectpoint as a function of elevation, and plot the predicted values along with the observed values.
+
+# make a "prediction grid" with 200 values of elevation between the minimum and maximum elevation in the data, and predict the number of cockles per transectpoint for each value of elevation in the prediction grid, using the glm3 model.
+prediction_grid <- data.frame(
+  Elevation_m = seq(
+    min(CockleCount2026$Elevation_m, na.rm = TRUE),
+    max(CockleCount2026$Elevation_m, na.rm = TRUE),
+    length.out = 200
+  )
+) |>
+  dplyr::filter(Elevation_m > 0.25)
+
+prediction_grid$predicted_glm1 <- predict(
+  glm1,
+  newdata = prediction_grid,
+  type = "response"
+)
+
+prediction_grid$predicted_glm2 <- predict(
+  glm2,
+  newdata = prediction_grid,
+  type = "response"
+)
+
+prediction_grid$predicted_glm3 <- predict(
+  glm3,
+  newdata = prediction_grid,
+  type = "response"
+)
+
+predictions_long <- prediction_grid |>
+  tidyr::pivot_longer(
+    cols = dplyr::starts_with("predicted_"),
+    names_to = "model",
+    values_to = "predicted"
+  )
+predictions_long
+
+CockleCount2026 |>
+  dplyr::filter(Elevation_m > 0.25) |>
   ggplot2::ggplot(aes(x = Elevation_m, y = cockle_count)) +
-  geom_point(aes(color = factor(ReplicatePlot_ID)), size = 1.5, alpha = 0.7) +
-  geom_smooth(method = "glm", formula = "y~x+I(x^2)", method.args = list(family = "poisson")) +
+  geom_point(size = 1.5, alpha = 0.7) +
+  geom_line(
+    data = predictions_long,
+    aes(y = predicted, color = model),
+    linewidth = 1.2
+  ) +
   labs(
     x = "Elevation (m + NAP)",
     y = "number of cockles per 0.068 m2",
-    color = "replicate plot"
+    color = "Model",
+    title = "Predicted cockle counts as a function of elevation"
   ) +
   theme(text = element_text(size = 10))
 
