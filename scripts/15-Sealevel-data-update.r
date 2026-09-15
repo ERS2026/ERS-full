@@ -15,3 +15,4 @@ newdat2<- newdat |>
 newdat2
 write_csv(newdat2, "C:/Users/holff/Downloads/20260830-13879/waterlevel2026.csv")
 # append the new data to the existing database. 
+
