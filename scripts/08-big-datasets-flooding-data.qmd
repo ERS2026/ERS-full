@@ -115,13 +115,13 @@ Before 1990 a different methods was used, so filter those years out
 
 ```{r}
 FloodProb |>
-  dplyr::filter(Sealevel_m == 0.5, Year >= 1990) |> 
+  dplyr::filter(Sealevel_m == 1, Year >= 1990) |> 
   ggplot(aes(x = Year, y = TransProb)) +
   geom_point(size = 3) +
   geom_smooth() +
   xlab("year") +
   ylab("transgression probability of elevation") +
-  ggtitle("summer flooding probability at 0.5 m to NAP")
+  ggtitle("summer flooding probability at 1 m to NAP")
 ```
 
 The analysis shows that in 2020,2021 and 2022 the salt marsh was exceptionally frequently flooded
