@@ -334,7 +334,7 @@ ggplot() +
 
 # repeat with a different dissimilarity measure, e.g. Hellinger
 # 1. Hellinger transform
-vegdat_hel <- decostand(vegdat, method = "hellinger")
+vegdat_hel <- decostand(vegdat2026, method = "hellinger")
 # 2. PCA (=unconstrained RDA), when data are hellinger transformed this is equivalent to a PCoA with euclidean distance on the original data 
 rda_res <- vegan::rda(vegdat_hel)
 # 3. Site scores
@@ -365,20 +365,11 @@ ggplot() +
 
 ```
 
-## Solar park data
-
-```{r}
-solardat<-read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vR0lG6_OUW42za4evantsfnerkHtud3Yb4T7IeRELBrKf6f3a04xwMXysX2wdPuZmPOGlyG9pBrcoE0/pub?gid=965225171&single=true&output=csv")
-
-
-
-```
-
 ## Cluster analysis (classification) of communities
 
 ```{r}
 # first calculate a dissimilarity matrix, using Bray-Curtis dissimilarity
-d<-vegan::vegdist(vegdat,method="bray")
+d<-vegan::vegdist(vegdat2026,method="bray")
 d
 
 # show the dissimilarity matrix (1= completely different, 0= exactly the same)
@@ -398,7 +389,7 @@ clust
 # do indicator species analysis - which species characterize each cluster? 
 library(indicspecies)
 set.seed(123) # for reproducibility
-indval <- multipatt(vegdat, clust, 
+indval <- multipatt(vegdat2026, clust, 
                     func = "IndVal.g", duleg = F, 
                     control = how(nperm = 999))
 summary(indval,indivalcomp=TRUE)
@@ -418,9 +409,9 @@ vegan::ordihull(dca,clust,lty=1,col="blue",lwd=2)
 
 
 #add the vegetation type to the environmental data
-envdat2<-envdat |>
+envdat2026_2<-envdat2026 |>
   dplyr::mutate(vegtype=clust)
-envdat2 |> as_tibble()
+envdat2026_2 |> as_tibble()
 
 
 # name the different communities that you identified
@@ -429,7 +420,7 @@ levels(envdat2$vegtype)<-c("Dune","High saltmarsh",
 
 
 # show boxplot of elevation differences between vegetation types
-p1<-envdat2 %>% ggplot(aes(x=vegtype,y=Elevation_m)) +
+p1<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Elevation_m)) +
   geom_boxplot(fill="brown") +
   xlab(NULL) +
   theme(axis.text.x=element_blank(),
@@ -437,7 +428,7 @@ p1<-envdat2 %>% ggplot(aes(x=vegtype,y=Elevation_m)) +
 p1
 
 # show boxplot of flooding probability differences between vegetation types
-p2<-envdat2 %>% ggplot(aes(x=vegtype,y=TransProb)) +
+p2<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=TransProb)) +
   geom_boxplot(fill="blue") +
   xlab(NULL) +
   theme(axis.text.x = element_blank(),
@@ -445,7 +436,7 @@ p2<-envdat2 %>% ggplot(aes(x=vegtype,y=TransProb)) +
 p2
 
 # show boxplot of clay thickness differences between vegetation types
-p3<-envdat2 %>% ggplot(aes(x=vegtype,y=Clay_cm)) +
+p3<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Clay_cm)) +
   geom_boxplot(fill="green") +
   xlab(NULL) +
   theme(axis.text.x = element_blank(),
@@ -453,21 +444,21 @@ p3<-envdat2 %>% ggplot(aes(x=vegtype,y=Clay_cm)) +
 p3
 
 # show boxplot of distance to gully  between vegetation types
-p4<-envdat2 %>% ggplot(aes(x=vegtype,y=Dist2Gully_m)) +
+p4<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Dist2Gully_m)) +
   geom_boxplot(fill="orange") +
   xlab(NULL) +
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
 p4
 
-p5<-envdat2 %>% ggplot(aes(x=vegtype,y=Redox5)) +
+p5<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Redox5)) +
   geom_boxplot(fill="purple") +
   xlab(NULL) +
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
 p5
 
-p6<-envdat2 %>% ggplot(aes(x=vegtype,y=Redox10)) +
+p6<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Redox10)) +
   geom_boxplot(fill="grey") 
 p6
 
