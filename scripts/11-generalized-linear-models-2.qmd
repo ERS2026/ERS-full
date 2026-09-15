@@ -75,23 +75,23 @@ cockledata$FactCockleSize |>
   geom_histogram(binwidth = 1, boundary=0) +
   labs(x = "length of cockles (mm)", y = "number of cockles")
 
-# make a list of all plots assessed for cockles in 2026
-CocklePlots2026 <- cockledata$FactCockleSize |>
-  dplyr::filter(Year == 2026) |>
-  dplyr::select(TransectPoint_ID) |>
-  dplyr::distinct()
 
-# sum up  the number of cockles per transect point in 2026.
+#Make a tibble with all combinations of transectpoints and replicate plots assessed for cockles in 2026, so that we can also include the transectpoints where no cockles were found in 2026.
+design2026<-expand.grid(ReplicatePlot_ID=unique(cockledata$FactCockleSize$ReplicatePlot_ID[cockledata$FactCockleSize$Year == 2026]),
+                        TransectPoint_ID=unique(cockledata$FactCockleSize$TransectPoint_ID[cockledata$FactCockleSize$Year == 2026])) |>
+  dplyr::as_tibble()
+design2026
+
+
+# sum up  the number of cockles per transectpoint per replicate plot in 2026.
 CockleCount2026present <- cockledata$FactCockleSize |>
   dplyr::filter(Year == 2026, !is.na(TransectPoint_ID),Present==1) |>
   dplyr::select(Year, ReplicatePlot_ID, CockleObs_ID, TransectPoint_ID, Length_mm) |>
-  dplyr::group_by(TransectPoint_ID) |>
-  dplyr::summarise(
-    cockle_count = n()
-  )
+    dplyr::summarise(.by = c("TransectPoint_ID", "ReplicatePlot_ID"), cockle_count = dplyr::n())
+CockleCount2026present
 
-# merge the two tables, so that we also have the transect points where no cockles were found in 2026, and replace all `NA` in `n_obs` with zero, and merge with the elevation data for 2026
-CockleCount2026 <- dplyr::left_join(CocklePlots2026, CockleCount2026present, by = "TransectPoint_ID") |>
+# merge the design with the observation data, so that we also have the transect points where no cockles were found in 2026, and replace all `NA` in `n_obs` with zero, and also merge with the elevation data for 2026
+CockleCount2026 <- dplyr::left_join(design2026, CockleCount2026present, by = c("TransectPoint_ID", "ReplicatePlot_ID")) |>
     dplyr::left_join(FactElevation2026, by = "TransectPoint_ID") |>
   dplyr::mutate(cockle_count = tidyr::replace_na(cockle_count, 0)) # replace na by 0
 
@@ -102,82 +102,65 @@ Plot with a linear model how the number of cockles per transectpoint changes wit
 
 ```{r}
 CockleCount2026 |> 
-  dplyr::filter(Elevation_m > 0.25) |>
+  dplyr::filter(Elevation_m > 0.25) |>  #remove outliers with very low elevation, not representative for the rest of the transect 
   ggplot2::ggplot(aes(x = Elevation_m, y = cockle_count)) +
-  geom_point(size=1) +
+  geom_point(aes(color = factor(ReplicatePlot_ID)), size = 1.5, alpha = 0.7) +
   geom_smooth(method = "lm", formula = "y~x") +
-  labs(x = "Elevation (m + NAP)", y = "number of cockles per 3 plots") +
+  labs(
+    x = "Elevation (m + NAP)",
+    y = "number of cockles per 0.068 m2",
+    color = "replicate plot"
+  ) +
   theme(text = element_text(size = 10))
 ```
 
-Merge the cockle and elevation data into a single table, `combidat`, using `TransectPoint_ID` as the common variable between the two tables, and replace all `NA` in `n_obs` with zero.
 
-```{r}
-Combidat <-
-  dplyr::left_join(FactElevation2017, FactCockleSize2017,
-    by = "TransectPoint_ID"
-  ) |>
-  dplyr::mutate(n_obs = tidyr::replace_na(n_obs, 0)) # replace na by 0
 
-Combidat
-```
-
-we find that the number of cockles is highest in the midde of this part of the transect, between transectpoint 170 and 2000
-
-# 04 Cockle density and elevation
+# 04 Model relation between cockle count and elevation
 
 Explore how the cockle density changes with elevation.
 
 ```{r}
-Combidat |>
-  ggplot2::ggplot(aes(x = Elevation_m, y = n_obs)) +
-  geom_point(size = 2) +
-  geom_line()
-
-# Fit a linear regression: `~` means "depends on / as a function of", so `lm(response_variable ~ predictor_variable)`.
-linreg <- stats::lm(n_obs ~ Elevation_m, data = Combidat)
+# Fit a linear regression: 
+linreg <- stats::lm(cockle_count ~ Elevation_m, data = CockleCount2026)
 summary(linreg)
 
-# Show this model as a line in ggplot, with the confidence interval.
+# The model is not significant, as the p-value of the linear term is > 0.05. We would conclude that there is no evidence for a linear relation between cockle count and elevation.
+# but check the q-q plot of the residuals to see whether the assumptions of the linear model are met.
+ggplot2::ggplot(linreg, aes(sample = .stdresid)) +
+  geom_qq() +
+  geom_qq_line() +
+  labs(x = "theoretical quantiles", y = "standardized residuals") +
+  theme(text = element_text(size = 10))
 
-Combidat |>
-  ggplot2::ggplot(aes(x = Elevation_m, y = n_obs)) +
-  geom_point(size = 2) +
-  geom_smooth(method = "lm", formula = "y~x")
+# this suggestes that the residuals are not normally distributed, and therefore the assumptions of the linear model are not met. We will therefore fit a generalized linear model (GLM) with a Poisson distribution, which is more appropriate for count data.
 
-# this is clearly not a good model, as the relation is clearly not linear, but rather unimodal. So we will fit a better model, using a loess smoother, and show this model in ggplot.
-Combidat |>
-  ggplot2::ggplot(aes(x = Elevation_m, y = n_obs)) +
-  geom_point(size = 2) +
-  geom_smooth(method = "loess", fill = NA) +
-  labs(x = "elevation in m + NAP", y = "number of cockles per 3 plots")
+CockleCount2026 |> 
+  dplyr::filter(Elevation_m > 0.25) |>  #remove the outlier transect+id with very low elevation, not representative 
+  glm(cockle_count ~ Elevation_m, data = _, family = "poisson") -> glm1
+summary(glm1) 
+
+# check if the model improves if we add a quadratic term (second-order polynomial) to the model, to test for a unimodal relation between cockle count and elevation.
+CockleCount2026 |> 
+  dplyr::filter(Elevation_m > 0.25) |>  #remove the outlier transect+id with very low elevation, not representative 
+  glm(cockle_count ~ Elevation_m + I(Elevation_m^2), data = _, family = "poisson") -> glm2
+summary(glm2) 
+
+# yes the quadratic term is significant, so we conclude that there is a unimodal relation between cockle count and elevation. Also the AIC is lower for the quadratic model, indicating a better fit. We will therefore use this model to predict the number of cockles per transectpoint as a function of elevation.
+
+CockleCount2026 |> 
+  dplyr::filter(Elevation_m > 0.25) |>  #remove the outlier transect+id with very low elevation, not representative 
+  ggplot2::ggplot(aes(x = Elevation_m, y = cockle_count)) +
+  geom_point(aes(color = factor(ReplicatePlot_ID)), size = 1.5, alpha = 0.7) +
+  geom_smooth(method = "glm", formula = "y~x+I(x^2)", method.args = list(family = "poisson")) +
+  labs(
+    x = "Elevation (m + NAP)",
+    y = "number of cockles per 0.068 m2",
+    color = "replicate plot"
+  ) +
+  theme(text = element_text(size = 10))
+
 ```
 
-# 05 Cockle size and elevation
-
-Plot how the size (as mean length) of cockles changes with elevation along the transect. Omit the observations where length is `NA` (because no cockles were measured), fit a quadratic model (second-order polynomial), show for each point also the standard errors, and add appropriate labels for the x and y axis.
-
-```{r}
-Combidat |>
-  dplyr::filter(!is.na(avg_l)) |>
-  ggplot2::ggplot(aes(x = Elevation_m, y = avg_l)) +
-  geom_point() +
-  geom_smooth(method = "lm", 
-              formula = "y~x",
-              fill = NA) +
-  geom_smooth(method = "lm",
-              formula = "y~x+I(x^2)",
-              se = TRUE,
-              color = "red", fill = NA) +
-  xlim(0, 0.8) +
-  labs(x = "elevation in m + NAP", y = "mean cockle length (mm)")
-
-# Test with linear regression whether these relations are significant.
-
-linreg2 <- stats::lm(avg_l ~ Elevation_m, data = Combidat)
-summary(linreg2)
-linreg3 <- stats::lm(avg_l ~ Elevation_m + I(Elevation_m^2), data = Combidat)
-summary(linreg3)
-```
-
-The unimodal relation between cockle size and elevation is not significant, as the quadratic term is not significant. The linear relation between cockle size and elevation is significant, as the p-value of the linear term is \< 0.05. We conclude that bigger cockles just found lower on the transect, without evidence for an optimum.
+we find that the number of cockles is highest in the middle of this part of the transect, between transectpoint 170 and 2000, and that the relation between cockle count and elevation is unimodal.
+The only problem that we have not addresses is that the data are not independent, as the same transectpoint is measured in three replicate plots, that are assumed to have the same elevation. We will address this issue in a next script, by fitting a generalized linear mixed model (GLMM) with transectpoint as a random effect. 
