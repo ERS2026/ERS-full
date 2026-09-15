@@ -30,10 +30,9 @@ search()
 gsheets_auth()
 ```
 
-
 # 02 Read and combine the data
 
-Load the elevation data and inspect its structure. Extract the data for 2026 into a new tibble, keep only the variables `distance_m` and `elevation`, and omit records where `TransectPoint_ID` is missing (`NA`).
+Load the elevation data and extract the data for 2026 into a new tibble, keep only the variables `distance_m` and `elevation`, and omit records where `TransectPoint_ID` is missing (`NA`).
 
 ```{r}
 elevdata<-read_gsdb("https://docs.google.com/spreadsheets/d/1UmpZoNIjo5lXdcpGKuBHe7wFX1Z3AQioeHjzrFgYnxo")
@@ -42,9 +41,7 @@ FactElevation2026<-elevdata$FactElevation |>
   dplyr::select(TransectPoint_ID, DistanceRTK_m, Elevation_m)
 ```
 
-
-
-Read the cockle data: keep only the data for 2026
+Read the cockle data: keep only the data for 2026 and define three size cohorts
 
 ```{r}
 # read the cockle data
@@ -86,8 +83,7 @@ design2026
 # sum up  the number of cockles per transectpoint per replicate plot in 2026.
 CockleCount2026present <- cockledata$FactCockleSize |>
   dplyr::filter(Year == 2026, !is.na(TransectPoint_ID),Present==1) |>
-  dplyr::select(Year, ReplicatePlot_ID, CockleObs_ID, TransectPoint_ID, Length_mm) |>
-    dplyr::summarise(.by = c("TransectPoint_ID", "ReplicatePlot_ID"), cockle_count = dplyr::n())
+    dplyr::summarise(.by = c("TransectPoint_ID", "ReplicatePlot_ID", "cohort"), cockle_count = dplyr::n())
 CockleCount2026present
 
 # merge the design with the observation data, so that we also have the transect points where no cockles were found in 2026, and replace all `NA` in `n_obs` with zero, and also merge with the elevation data for 2026
@@ -104,7 +100,7 @@ Plot with a linear model how the number of cockles per transectpoint changes wit
 CockleCount2026 |> 
   dplyr::filter(Elevation_m > 0.25) |>  #remove outliers with very low elevation, not representative for the rest of the transect 
   ggplot2::ggplot(aes(x = Elevation_m, y = cockle_count)) +
-  geom_point(aes(color = factor(ReplicatePlot_ID)), size = 1.5, alpha = 0.7) +
+  geom_point(aes(color = factor(ReplicatePlot_ID)), size = 1.5, alpha = 0.5) +
   geom_smooth(method = "lm", formula = "y~x") +
   labs(
     x = "Elevation (m + NAP)",
@@ -114,9 +110,9 @@ CockleCount2026 |>
   theme(text = element_text(size = 10))
 ```
 
+Note the large variation between the replicate plots#
 
-
-# 04 Model relation between cockle count and elevation
+# 04 Model the relation between cockle count and elevation
 
 Explore how the cockle density changes with elevation.
 
@@ -125,15 +121,18 @@ Explore how the cockle density changes with elevation.
 linreg <- stats::lm(cockle_count ~ Elevation_m, data = CockleCount2026)
 summary(linreg)
 
-# The model is not significant, as the p-value of the linear term is > 0.05. We would conclude that there is no evidence for a linear relation between cockle count and elevation.
-# but check the q-q plot of the residuals to see whether the assumptions of the linear model are met.
+# The model is not significant. We would conclude that there is no evidence for a linear relation between cockle count and elevation.
+# but check the q-q plot of the residuals to see whether the assumptions of the linear model are met (Gaussian distribution of residuals)
 ggplot2::ggplot(linreg, aes(sample = .stdresid)) +
   geom_qq() +
   geom_qq_line() +
   labs(x = "theoretical quantiles", y = "standardized residuals") +
   theme(text = element_text(size = 10))
+# to test if there is a significant deviation from a normal distribution: 
+stats::shapiro.test(residuals(linreg))
 
-# this suggestes that the residuals are not normally distributed, and therefore the assumptions of the linear model are not met. We will therefore fit a generalized linear model (GLM) with a Poisson distribution, which is more appropriate for count data.
+
+# this suggestes that the residuals are not at all normally distributed, and therefore the assumptions of the linear model are not met. We will therefore fit a generalized linear model (GLM) with a Poisson distribution, which is more appropriate for count data.
 
 CockleCount2026 |> 
   dplyr::filter(Elevation_m > 0.25) |>  #remove the outlier transect+id with very low elevation, not representative 
@@ -152,6 +151,11 @@ summary(glm2)
 library(DHARMa)
 simres <- DHARMa::simulateResiduals(fittedModel = glm2, n = 1000)
 plot(simres)
+# this doesn't look good, the residuals are not uniformly distributed, and there is a clear pattern in the residuals, indicating that the model does not fit the data well. We will therefore test for uniformity and dispersion of the residuals using the DHARMa package.
+
+# test for uniformity and dispersion of the residuals. A Poisson distribution assumes that the variance is equal to the mean, and therefore the dispersion parameter should be close to 1. If the dispersion parameter is larger than 1, this indicates overdispersion, which means that the variance is larger than the mean, and therefore the Poisson distribution is not appropriate for these data. In that case we can try to fit a negative binomial model instead of a Poisson model.
+DHARMa::testDispersion(simres)
+
 
 
 CockleCount2026 |> 
@@ -168,5 +172,4 @@ CockleCount2026 |>
 
 ```
 
-we find that the number of cockles is highest in the middle of this part of the transect, between transectpoint 170 and 2000, and that the relation between cockle count and elevation is unimodal.
-The only problem that we have not addresses is that the data are not independent, as the same transectpoint is measured in three replicate plots, that are assumed to have the same elevation. We will address this issue in a next script, by fitting a generalized linear mixed model (GLMM) with transectpoint as a random effect. 
+we find that the number of cockles is highest in the middle of this part of the transect, between transectpoint 170 and 2000, and that the relation between cockle count and elevation is unimodal. The only problem that we have not addresses is that the data are not independent, as the same transectpoint is measured in three replicate plots, that are assumed to have the same elevation. We will address this issue in a next script, by fitting a generalized linear mixed model (GLMM) with transectpoint as a random effect.

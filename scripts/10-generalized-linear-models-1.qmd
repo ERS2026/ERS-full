@@ -1,0 +1,438 @@
+---
+title: "10 generalized linear models (GLMs)"
+subtitle: "Model plant occurrence along an elevation gradient with logistic regression"
+author: "Han Olff"
+date: "2025-09-16"
+editor_options:
+  chunk_output_type: console
+execute:
+  output: false
+  warning: false
+  message: false
+---
+
+# 01 Type of Linear Models
+
+The appropriate linear model depends on:
+
+1.  Whether the response is continuous with approximately normal residuals or requires another distribution.
+2.  Whether observations are independent or grouped/repeated.
+
+|   | **Continuous response; approximately normal residuals** | **Non-normal response, requires other distribution** |
+|------------------|-----------------------------|-------------------------|
+| **Independent observations** | **Linear model (LM).** Uses fixed effects only. Assumes independent observations, approximately normally distributed residuals and constant residual variance. This category includes linear regression, *t*-tests and 1-way ANOVA, n-way ANOVA and ANCOVA | **Generalized linear model (GLM).** Uses fixed effects only. Uses a response distribution and link function appropriate for the data, such as binomial for binary data, Poisson for counts or Gamma for positive continuous data. |
+| **Grouped or repeated observations** | **Linear mixed model (LMM).** Adds random effects to account for dependence among observations from the same subjects, sites, years or other groups. The response is continuous, with approximately normally distributed residuals. | **Generalized linear mixed model (GLMM).** Combines a non-normal response distribution with random effects that account for grouped or repeated observations. |
+
+```{r}
+#| eval: false
+
+# Linear model with predictor 'x'
+model_lm <- stats::lm(
+  y ~ x,
+  data = dat
+)
+
+# Generalized linear model with predictor x
+model_glm <- stats::glm(
+  y ~ x,
+  family = binomial, # depends on type of y
+  data = dat
+)
+
+# Linear mixed model with fixed predictor 'x' and random predictor 'group'
+model_lmm <- glmmTMB::glmmTMB(
+  y ~ x + (1 | group),
+  family = gaussian, # depends on type of y
+  data = dat
+)
+
+# Generalized linear mixed model with fixed predictor 'x' and random predictor 'group'
+model_glmm <- glmmTMB::glmmTMB(
+  y ~ x + (1 | group),
+  family = binomial, # depends on type of y
+  data = dat
+)
+```
+
+**Common distributions**
+
+| **Type of response** | **Family** |
+|--------------------------------------------|----------------------------|
+| Continuous and approximately normal | `gaussian(link="identity")` |
+| Binary or successes out of a number of trials | ``` binomial``(link="logit") ``` |
+| Counts with variance approximately equal to the mean | `poisson(link="log")` |
+| Overdispersed counts (more zeros observed than expected from the distribution) | `nbinom2(link="log)` |
+| Positive continuous values without zeros | `Gamma(link = "log")` |
+| Non-negative continuous values including zeros | `tweedie(link = "log")` |
+
+# 02 Introduction to Generalized Linear Models
+
+In Generalized Linear Models (GLMs) we let go of the assumption of Linear Models (LMs) that the residuals need to be normally distributed. Instead they can follow a binomal distribution, poission distribution, negative binomial distribution, or various zero-inflated distributions. Typically the type of regression you do in a GLM is named after the distribution. For example a logistic regression (bionomial distribution), poisson regression (poisson distribution), etc. The model you use depends on the **type of response variable you have**, and the **distribution of the residuals**. Together these two factors determine the type of GLM you should use, that typically connects a particular transformation of the response variable to a linear combination of predictors. The transformation is called the **link function**. For example, in logistic regression the logit link function transforms the probability of occurrence to log odds, which can then be modelled as a linear combination of predictors. In Poisson regression the log link function transforms the expected count to a linear combination of predictors. The transformation typically depends on the distribution of the response variable, and is chosen to ensure that the predicted values are in the correct range (e.g. probabilities between 0 and 1, counts greater than or equal to 0).
+
+In general there is a connection between the type of response of y, the transformation that you apply to the predicted values, the assumed distribution of the residuals (with different assumptions on the relation between mean and variance of the residuals)
+
+| Type of response of y | Transformation of y | Distribution of residuals |
+|------------------------|------------------------|------------------------|
+| Binomial | logit -\> log(P/1-P) | Bionomial |
+| Integers | log(y) | Poisson |
+| Continious larger or equal to zero | log(y) | Tweedie |
+
+You can use the following decision tree for determining the best GLM for your data, depending on a series of questions
+
+**What kind of response variable (Y) do I have?**
+
+- **Continuous**
+
+  - Can be negative / approximately symmetric → **Gaussian glm**
+  - Non-negative
+    - No zeros → **Gamma glm**
+    - Exact zeros present → **Tweedie glm**
+      - Or a **hurdle model** if zero and positive values represent different biological processes
+
+- **Counts**
+
+  - Variance ≈ mean (at the same predictor values)→ **Poisson glm (poisson regression)**
+  - Variance \> mean (at the same predictor values)→ **Negative binomial glm**
+  - More zeros than the count model predicts:
+    - **Zero-inflated Poisson glm**
+    - **Zero-inflated negative binomial glm**
+    - Or a **hurdle model**
+
+- **Binary** → **Binomial glm (logistic regression)**
+
+- **Proportion**
+
+  - Successes / number of trials → **Binomial glm (logistic regression)**
+  - Continuous proportion → **Beta regression**
+
+# 02 Setup your environment
+
+We will load the libraries glmmTMB for fitting GLMs and DHARMa for testing assumptions, as degree of zero-inflation etd
+
+```{r}
+# Run the common setup script containing packages and helper functions.
+source(here::here("scripts", "01-setup.R"))
+
+# Authenticate your Google account.
+gsheets_auth()
+
+# load required library
+library(DHARMa)  # for checking assumptions of GLMs
+```
+
+# 02 Read, prepare and explore the data
+
+In the rest of this script we will use logistic regression (a generalized linear model for binomial response variables) to model the presence (1) or absence (0) of salt-marsh plant species in response to elevation along the microtransect. We compare linear and quadratic elevation responses, make predictions, and visualise the fitted occurrence probabilities in response to elevation
+
+We read the `FactVegClay2026` table form the Microtransect database, which holds occurrence per species in wide format. We will reshape the species columns to long format, and retain the 2026 observations (except `Salicornia.sp`, as we use the separate 2 species.
+
+```{r}
+# Read google sheets database: MicrotransectDB
+MicrotransectDB <- read_gsdb(
+  "https://docs.google.com/spreadsheets/d/1dJkH09imko9RgOkGzYQT74IeGY56QwiXjjBl7u0KcK0/"
+)
+#filter to only 2026 data and write to new tibble
+FactVegClay2026_wide<-MicrotransectDB$FactVegClay |>
+  dplyr::filter(Year == 2026)
+#pivot to long format
+FactVegClay2026_long <- MicrotransectDB$FactVegClay |>
+  tidyr::pivot_longer(
+    cols = -c(Point_ID:ClayDepth_cm),
+    names_to = "Species",
+    values_to = "Present"
+  ) |>
+  dplyr::arrange(Year, Species, Point_ID) |>
+  dplyr::filter(Year == 2026, Species != "Salicornia.sp")
+
+FactVegClay2026_long
+```
+
+Calculate the thickness of the sand and clay layers and display their depth along the transect.
+
+```{r}
+# calculate and sand layer base elevation (elevation where the clay layer starts) and clay depth
+Soil2026 <- FactVegClay2026_wide |>
+  dplyr::mutate(SandDepth_cm = 100 * Elevation_m - ClayDepth_cm) |>
+  dplyr::select(Point_ID, SandDepth_cm, ClayDepth_cm) |>
+  tidyr::pivot_longer(
+    cols = -Point_ID,
+    names_to = "SoilLayer",
+    values_to = "LayerThickness_cm"
+  )
+
+# plot the result as a stacked area plot
+p1 <-Soil2026 |>
+  ggplot(aes(x = Point_ID, y = LayerThickness_cm, fill = SoilLayer)) +
+  geom_area() +
+  coord_cartesian(ylim = c(95, 125)) +
+  scale_fill_manual(values = c(
+    "SandDepth_cm" = "khaki",
+    "ClayDepth_cm" = "saddlebrown"
+  )) +
+  labs(
+    x = "Distance along the transect (m)",
+    y = "Layer thickness (cm)",
+    title = "clay profile"
+  ) +
+  theme_bw(base_size = 9) 
+p1
+```
+
+Show the observed occurrences of all species, then combine this figure with the soil profile.
+
+```{r}
+# make plant presence dataset for each transectpoint
+PlantPres <- FactVegClay2026_long |>
+  dplyr::filter(Present == 1) |>
+  dplyr::mutate(
+    Species = factor(Species, levels = rev(sort(unique(Species))))
+  )
+
+p2 <- ggplot(
+  PlantPres,
+  aes(x = Point_ID, y = Species, color=Species)
+) +
+  geom_point(size = 1.2) +
+  labs(x = NULL, y = NULL, title = "species occurrence") +
+  theme_bw(base_size = 9) +
+  guides(color = "none") +
+  scale_y_discrete(position = "right")
+p2
+
+# combine the ggplot objects in one plot with the patchwork package
+patchwork::wrap_plots(p2, p1, ncol = 1) +
+  patchwork::plot_annotation(tag_levels = "A")
+
+
+# save the plot
+ggsave(
+  filename = here::here("figures/ERS2026-Script10", "10-GLM-species-occurrence.png"),
+  width = 1920, height = 1200, units = "px"
+)
+```
+
+# 03 Explore species responses to elevation
+
+Calculate the frequency of occurrence of each species in 2025 and select the six most common species for modelling.
+
+```{r}
+SpeciesFreq2026 <- FactVegClay2026_long |>
+  dplyr::group_by(Species) |>
+  dplyr::summarise(Freq = mean(Present,na.rm=TRUE), .groups = "drop") |>
+  dplyr::arrange(desc(Freq))
+SpeciesFreq2026
+
+DomSpec <- c("Salicornia.europaea","Puccinellia.maritima", "Limonium.vulgare","Suaeda.maritima", "Plantago.maritima", "Glaux.maritima", "Salicornia.procumbens", "Atriplex.portulacoides", "Spartina.anglica")
+
+DomSpec
+```
+
+# 04 Generalized linear models: the logistic regression model
+
+For a binary response, logistic regression models the log odds (logit) of occurrence.
+
+$$\log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 X_i$$
+Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1. \# 05 example: logistic regression of Glaux maritima occurrence along the elevation gradient
+
+Do a logistic regression: fit linear and quadratic elevation response models for *Glaux maritima*.
+
+```{r}
+m.Glaux1 <- FactVegClay2026_long |>
+  dplyr::filter(Species == "Glaux.maritima") |>
+  glm(Present ~ Elevation_m,
+      family = binomial(link = "logit"),
+      data = _
+  )
+summary(m.Glaux1)
+
+m.Glaux2 <- FactVegClay2026_long |>
+  dplyr::filter(Species == "Glaux.maritima") |>
+  glm(
+    Present ~ Elevation_m + I(Elevation_m^2),
+    family = binomial(link = "logit"),
+    data = _
+  )
+summary(m.Glaux2)
+
+# if the quadratic term is significant, use the quadratic model, if only the linear term is significant, then use that model. 
+
+# plot the fitted models m.Glaux1 and m.Glaux2
+FactVegClay2026_long |>
+  dplyr::filter(Species == "Glaux.maritima") |>
+  ggplot(aes(x = Elevation_m, y = Present)) +
+  geom_point(size = 1) +
+  geom_smooth(
+    method = "glm",
+    formula = y ~ x,
+    method.args = list(family = binomial(link = "logit")),
+    se = FALSE,
+    color = "red",
+    linewidth = 1
+  ) +
+  geom_smooth(
+    method = "glm",
+    formula = y ~ x + I(x^2),
+    method.args = list(family = binomial(link = "logit")),
+    se = FALSE,
+    color = "blue",
+    linewidth = 1
+  ) +
+  labs(
+    title = "Glaux maritima",
+    x = "Elevation (m)",
+    y = "Presence probability"
+  ) +
+  coord_cartesian(ylim = c(0, 1))
+```
+
+We find that the quadratic model fits significantly better for Glaux than the linear model (significant quadratic term). The blue line is the quadratic model, the red line is the linear model. The quadratic model predicts a peak in occurrence probability arround 1.22 m elevation.
+
+```{r}
+glaux_residuals2 <- DHARMa::simulateResiduals(m.Glaux2)
+plot(glaux_residuals2)
+
+DHARMa::plotResiduals(
+  glaux_residuals2,
+  form = model.frame(m.Glaux2)$Elevation_m
+)
+```
+
+We can use the package DHARMa to check whether the model adequately describes how the probability of Glaux presence changes with elevation. - Not perfect here
+
+There are some deviations from the expected uniform distribution of residuals, but overall the model seems to fit reasonably well. The residuals are not perfectly uniform, but there is no strong pattern with elevation.
+
+Because we want to do this for multiple species, define reusable functions to fit each candidate model and add response-scale predictions to the data. The predictions are probabilities of occurrence.
+
+# 06 calculate the responses for all dominant species
+
+```{r}
+fit1 <- function(species_name, db = FactVegClay2026_long) {
+  db |>
+    dplyr::filter(Species == species_name) |>
+    glm(
+      Present ~ Elevation_m,
+      family = binomial(link = "logit"),
+      data = _
+    )
+}
+
+fit2 <- function(species_name, db = FactVegClay2026_long) {
+  db |>
+    dplyr::filter(Species == species_name) |>
+    glm(
+      Present ~ Elevation_m + I(Elevation_m^2),
+      family = binomial(link = "logit"),
+      data = _
+    )
+}
+
+add_predictions <- function(species_name, model,
+                            db = FactVegClay2026_long) {
+  if (!"Predicted" %in% names(db)) db$Predicted <- NA_real_
+
+  rows <- db$Species == species_name
+  db$Predicted[rows] <- predict(
+    model,
+    newdata = db[rows, , drop = FALSE],
+    type = "response"
+  )
+
+  db
+}
+```
+
+Inspect the two candidate models for each dominant species. If the quadratic term is significant, use the quadratic model, if only the linear term is significant, then use that model. Add the selected model to the dataset.
+
+```{r}
+# Glaux maritima
+summary(fit1("Glaux.maritima"))
+summary(fit2("Glaux.maritima"))
+FactVegClay2026_long<-add_predictions("Glaux.maritima", fit2("Glaux.maritima"))
+
+# Limonium vulgare
+summary(fit1("Limonium.vulgare"))
+summary(fit2("Limonium.vulgare"))
+FactVegClay2026_long <- add_predictions(
+  "Limonium.vulgare", fit2("Limonium.vulgare")
+)
+
+# Plantago maritima
+summary(fit1("Plantago.maritima"))
+summary(fit2("Plantago.maritima"))
+FactVegClay2026_long <- add_predictions(
+  "Plantago.maritima", fit1("Plantago.maritima")
+)
+
+# Puccinellia maritima
+summary(fit1("Puccinellia.maritima"))
+summary(fit2("Puccinellia.maritima"))
+FactVegClay2026_long <- add_predictions(
+  "Puccinellia.maritima", fit2("Puccinellia.maritima")
+)
+
+# Salicornia europaea
+summary(fit1("Salicornia.europaea"))
+summary(fit2("Salicornia.europaea"))
+FactVegClay2026_long <- add_predictions(
+  "Salicornia.europaea", fit2("Salicornia.europaea")
+)
+
+# Salicornia.procumbens
+summary(fit1("Salicornia.procumbens"))
+summary(fit2("Salicornia.procumbens"))
+FactVegClay2026_long <- add_predictions(
+  "Salicornia.procumbens", fit1("Salicornia.procumbens")
+)
+
+# Atriplex.portulacoides
+summary(fit1("Atriplex.portulacoides"))
+summary(fit2("Atriplex.portulacoides"))
+FactVegClay2026_long <- add_predictions(
+  "Atriplex.portulacoides", fit1("Atriplex.portulacoides")
+)
+# Spartina.anglica
+summary(fit1("Spartina.anglica"))
+summary(fit2("Spartina.anglica"))
+FactVegClay2026_long <- add_predictions(
+  "Spartina.anglica", fit1("Spartina.anglica")
+)
+
+# Suaeda.maritima
+summary(fit1("Suaeda.maritima"))
+summary(fit2("Suaeda.maritima"))
+FactVegClay2026_long <- add_predictions(
+  "Suaeda.maritima", fit1("Suaeda.maritima")
+)
+
+```
+
+# 05 Plot the fitted occurrence probabilities
+
+```{r}
+# Observed presences/absences and fitted probabilities per species.
+p4 <- FactVegClay2026_long |>
+  dplyr::filter(Species %in% DomSpec) |>
+  ggplot(aes(x = Elevation_m, y = Present)) +
+  geom_point(size = 1) +
+  geom_line(aes(y = Predicted)) +
+  labs(title = "Microtransect", x = "Elevation (m)", y = "Presence") +
+  ylim(-1, 2) +
+  facet_wrap(~Species)
+p4
+
+# Fitted occurrence probabilities for all six species in one plot.
+p5 <- FactVegClay2026_long |>
+  dplyr::filter(Species %in% DomSpec) |>
+  ggplot(aes(x = Elevation_m, colour = Species)) +
+  geom_line(aes(y = Predicted), linewidth = 1) +
+  labs(title = "Microtransect", x = "Elevation (m)", y = "Presence") +
+  ylim(0, 1)
+p5
+
+# Combine the final two plots vertically with the patchwork.
+
+ggsave(
+  filename = here::here("figures/ERS2026-Script10", "10-GLM-species-occurrence-predictions.png"),
+  width = 1920, height = 1200, units = "px"
+)
+```
