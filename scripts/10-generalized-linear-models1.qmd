@@ -231,9 +231,8 @@ DomSpec
 
 For a binary response, logistic regression models the log odds (logit) of occurrence.
 
-$$
-\log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 X_i
-$$ Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1. \# 05 example: logistic regression of Glaux maritima occurrence along the elevation gradient
+$$\log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 X_i$$
+Here, $p_i / (1 - p_i)$ is the odds (probability) of occurrence, $X_i$ is a predictor (such as elevation), and the coefficients describe how the log odds change with that predictor. Odds compare occurrence to non-occurrence, for p=0.75 the odds are 0.75/0.25=3 - that is "3 to 1": occurrence is three times as likely as non-occurrence. Logistic regression uses log odds internally because this lets predictors have a linear relationship with the model output while ensuring the final predicted probabilities stay between 0 and 1. \# 05 example: logistic regression of Glaux maritima occurrence along the elevation gradient
 
 Do a logistic regression: fit linear and quadratic elevation response models for *Glaux maritima*.
 
@@ -288,7 +287,6 @@ FactVegClay2026_long |>
 
 We find that the quadratic model fits significantly better for Glaux than the linear model (significant quadratic term). The blue line is the quadratic model, the red line is the linear model. The quadratic model predicts a peak in occurrence probability arround 1.22 m elevation.
 
-
 ```{r}
 glaux_residuals2 <- DHARMa::simulateResiduals(m.Glaux2)
 plot(glaux_residuals2)
@@ -299,7 +297,6 @@ DHARMa::plotResiduals(
 )
 ```
 
-
 We can use the package DHARMa to check whether the model adequately describes how the probability of Glaux presence changes with elevation. - Not perfect here
 
 There are some deviations from the expected uniform distribution of residuals, but overall the model seems to fit reasonably well. The residuals are not perfectly uniform, but there is no strong pattern with elevation.
@@ -307,7 +304,6 @@ There are some deviations from the expected uniform distribution of residuals, b
 Because we want to do this for multiple species, define reusable functions to fit each candidate model and add response-scale predictions to the data. The predictions are probabilities of occurrence.
 
 # 06 calculate the responses for all dominant species
-
 
 ```{r}
 fit1 <- function(species_name, db = FactVegClay2026_long) {

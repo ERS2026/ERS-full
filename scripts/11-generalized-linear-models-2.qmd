@@ -1,0 +1,146 @@
+---
+title: "General linear models (GLM) - Poisson regression"
+subtitle: "find the best model for the relation between cockle counts and elevation"
+author: "Han Olff"
+date: "2025-9-02"
+editor_options: 
+  chunk_output_type: console
+execute:
+  output: false
+  warning: false
+  message: false
+---
+
+# 01 Setup your environment
+
+Run the common setup script and synchronize the local project with GitHub.
+
+```{r}
+# Run the setup script containing package restoration, helper functions, etc.
+source(here::here("scripts", "01-setup.R"))
+
+# Pull changes from the online repository into this local project folder.
+# This is especially important when collaborating on the same project.
+system2("git", c("-C", here::here(), "pull"))
+
+# show which package namespaces are loaded to memory with library()
+search()
+
+# authenticate your @student.rug.nl google account
+gsheets_auth()
+```
+
+
+# 02 Read and combine the data
+
+Load the elevation data and inspect its structure. Extract the data for 2026 into a new tibble, keep only the variables `distance_m` and `elevation`, and omit records where `TransectPoint_ID` is missing (`NA`).
+
+```{r}
+elevdata<-read_gsdb("https://docs.google.com/spreadsheets/d/1UmpZoNIjo5lXdcpGKuBHe7wFX1Z3AQioeHjzrFgYnxo")
+FactElevation2026<-elevdata$FactElevation |>
+  dplyr::filter(Year == 2026, !is.na(TransectPoint_ID)) |>
+  dplyr::select(TransectPoint_ID, DistanceRTK_m, Elevation_m)
+```
+
+
+
+Read the cockle data: keep only the data for 2026
+
+```{r}
+# read the cockle data
+cockledata<-read_gsdb("https://docs.google.com/spreadsheets/d/1E1vUWAHhse7fhjBf94Kiog3Rsj7IkMuFtP-BTQX2oI8")
+
+FactCockleSize2026 <- cockledata$FactCockleSize |>
+  dplyr::filter(Year == 2026, !is.na(TransectPoint_ID)) |>
+  dplyr::select(Year, ReplicatePlot_ID, CockleObs_ID, TransectPoint_ID, Length_mm) |>
+  dplyr::group_by(TransectPoint_ID) |>
+  dplyr::summarise(
+    n_obs = n(),
+    avg_l = mean(Length_mm, na.rm = T),
+    sd_l = sd(Length_mm, na.rm = T), # measure of group variation
+    se_l = sd_l / sqrt(n_obs) # measure of how precise you measure the mean
+  )
+print(FactCockleSize2026)
+```
+
+Plot (with a line and points) how the number of cockles changes with distance (`TransectPoint_ID`) along the transect.
+
+```{r}
+FactCockleSize2017 |>
+  ggplot2::ggplot(aes(x = TransectPoint_ID, y = n_obs)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "transect point", y = "number of cockles per 3 plots")
+```
+
+Merge the cockle and elevation data into a single table, `combidat`, using `TransectPoint_ID` as the common variable between the two tables, and replace all `NA` in `n_obs` with zero.
+
+```{r}
+Combidat <-
+  dplyr::left_join(FactElevation2017, FactCockleSize2017,
+    by = "TransectPoint_ID"
+  ) |>
+  dplyr::mutate(n_obs = tidyr::replace_na(n_obs, 0)) # replace na by 0
+
+Combidat
+```
+
+we find that the number of cockles is highest in the midde of this part of the transect, between transectpoint 170 and 2000
+
+# 04 Cockle density and elevation
+
+Explore how the cockle density changes with elevation.
+
+```{r}
+Combidat |>
+  ggplot2::ggplot(aes(x = Elevation_m, y = n_obs)) +
+  geom_point(size = 2) +
+  geom_line()
+
+# Fit a linear regression: `~` means "depends on / as a function of", so `lm(response_variable ~ predictor_variable)`.
+linreg <- stats::lm(n_obs ~ Elevation_m, data = Combidat)
+summary(linreg)
+
+# Show this model as a line in ggplot, with the confidence interval.
+
+Combidat |>
+  ggplot2::ggplot(aes(x = Elevation_m, y = n_obs)) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", formula = "y~x")
+
+# this is clearly not a good model, as the relation is clearly not linear, but rather unimodal. So we will fit a better model, using a loess smoother, and show this model in ggplot.
+Combidat |>
+  ggplot2::ggplot(aes(x = Elevation_m, y = n_obs)) +
+  geom_point(size = 2) +
+  geom_smooth(method = "loess", fill = NA) +
+  labs(x = "elevation in m + NAP", y = "number of cockles per 3 plots")
+```
+
+# 05 Cockle size and elevation
+
+Plot how the size (as mean length) of cockles changes with elevation along the transect. Omit the observations where length is `NA` (because no cockles were measured), fit a quadratic model (second-order polynomial), show for each point also the standard errors, and add appropriate labels for the x and y axis.
+
+```{r}
+Combidat |>
+  dplyr::filter(!is.na(avg_l)) |>
+  ggplot2::ggplot(aes(x = Elevation_m, y = avg_l)) +
+  geom_point() +
+  geom_smooth(method = "lm", 
+              formula = "y~x",
+              fill = NA) +
+  geom_smooth(method = "lm",
+              formula = "y~x+I(x^2)",
+              se = TRUE,
+              color = "red", fill = NA) +
+  xlim(0, 0.8) +
+  labs(x = "elevation in m + NAP", y = "mean cockle length (mm)")
+
+# Test with linear regression whether these relations are significant.
+
+linreg2 <- stats::lm(avg_l ~ Elevation_m, data = Combidat)
+summary(linreg2)
+linreg3 <- stats::lm(avg_l ~ Elevation_m + I(Elevation_m^2), data = Combidat)
+summary(linreg3)
+```
+
+The unimodal relation between cockle size and elevation is not significant, as the quadratic term is not significant. The linear relation between cockle size and elevation is significant, as the p-value of the linear term is \< 0.05. We conclude that bigger cockles just found lower on the transect, without evidence for an optimum.
