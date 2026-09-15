@@ -29,25 +29,27 @@ library(ggrepel) # for avoiding overlapping labels in ggplot
 ```
 
 # 02 Read and combine the datasets
+
 We will work with the vegetation data of 2026
+
 ```{r}
 
 # 1) read and filter the vegetation data for 2025
 # browseURL("https://docs.google.com/spreadsheets/d/1WIzkUvunLk1buybZ04Oko8wnF65EbuXjWEviWbeAwu4")
 VegetationDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1WIzkUvunLk1buybZ04Oko8wnF65EbuXjWEviWbeAwu4",
                         sheet="FactVegCov")
-VegetationDB$FactVegCov2026<-VegetationDB$FactVegCov |>
+vegdat2026<-VegetationDB$FactVegCov |>
   # filter for only the only 2026 data and plots with vegetation
   filter(Year==2026 & TransectPoint_ID<=1150) |>     
   # select  only distance_m and the species names as variable to use
   dplyr::select(-c(Year,Bare,Litter,Mosses,SalicSpp)) |>
   # convert distance_m to the row names of the tibble (required by vegan)
-  tibble::column_to_rownames(var="TransectPoint_ID") %>%  
+  tibble::column_to_rownames(var="TransectPoint_ID")  %>%  
   # %>% needed because of  . representing the input data in next line
   # remove species are not found in any of the plots in this year
-  dplyr::select(which(colSums(.) != 0)) |>
-  dplyr::as_tibble()
-VegetationDB$FactVegCov2026
+  dplyr::select(which(colSums(.) != 0)) 
+  # this needs to stay a datafram (because of the row numbers, do not make it a tibble)
+vegdat2026
 
 # 2) read and filter the macrotransect elevation data for 2026
 MacrotransectDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1UmpZoNIjo5lXdcpGKuBHe7wFX1Z3AQioeHjzrFgYnxo",
@@ -63,38 +65,45 @@ MacrotransectDB$FactDist2Gully <- MacrotransectDB$FactDist2Gully |>
   dplyr::select(TransectPoint_ID,Dist2Gully_m)   
 print(MacrotransectDB$FactDist2Gully,n=25)
 
-
 # 3) read the transgression probability (proportion of the time of  the growing season flooded) of different elevations (per cm)
 # from 1 april - 30 aug
 SchierTideDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1DOzvscotzWXm5MmEFrZhvPY820weEZVcSfUYz_5Gyf4",
                         sheets="FactTransProb") 
-SchierTideDB$FactTransProb2025<-SchierTideDB$FactTransProb |>
-  dplyr::filter(Year==2025) |>
+SchierTideDB$FactTransProb2026<-SchierTideDB$FactTransProb |>
+  dplyr::filter(Year==2026) |>
   dplyr::select(Elevation_m,TransProb)
-SchierTideDB$FactTransProb2025
+SchierTideDB$FactTransProb2026
 
 
 # 4) read the clay thickness and redox potential from the soil  database
 SoilDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1oHYCBlLR47Pxov5iF8PS_71lIRJwxgUfAP_t8JumJ7o",
-                  sheet=c("FactProfile","FactRedox"))
-SoilDB$FactProfile2025<-SoilDB$FactProfile |>
-  dplyr::filter(Year==2025 & SoilType_ID %in% c("clay","clay-organic") & TransectPoint_ID<=1150) |>
+                  sheet=c("FactProfile","FactRedox", "FactMoistureSalinity"))
+SoilDB$FactProfile2026<-SoilDB$FactProfile |>
+  dplyr::filter(Year==2026 & SoilType_ID %in% c("clay","clay-organic") & TransectPoint_ID <= 1150) |>
   dplyr::select(TransectPoint_ID,corrected_depth) |>     
   group_by(TransectPoint_ID) |> 
   dplyr::summarize(Clay_cm=mean(corrected_depth,na.rm=T)) #calculate average clay layer thickness  for each pole
-SoilDB$FactProfile2025
+SoilDB$FactProfile2026
 
-
-SoilDB$FactRedox2025<-SoilDB$FactRedox |>
-  dplyr::filter(Year==2025,TransectPoint_ID<=1150) |>
+# read redox
+SoilDB$FactRedox2026<-SoilDB$FactRedox |>
+  dplyr::filter(Year==2026 & TransectPoint_ID <= 1150) |>
   dplyr::group_by(TransectPoint_ID,ProbeDepth) |>
-  dplyr::summarize(redox_mV=mean(redox_raw2_mV,na.rm=T)) |>
+  dplyr::summarize(redox_mV=mean(redox_calib_mV,na.rm=T))  |>
   tidyr::pivot_wider(id_cols=TransectPoint_ID,
                      names_from=ProbeDepth,
                      names_prefix = "Redox",
                      values_from = redox_mV)
-SoilDB$FactRedox2025
+SoilDB$FactRedox2026
 
+# read moisture and sality
+SoilDB$FactMoistureSalinity2026<-SoilDB$FactMoistureSalinity |>
+  dplyr::filter(Year==2026 & TransectPoint_ID <= 1150) |>
+  dplyr::group_by(TransectPoint_ID) |>
+  dplyr::summarize(perc_water=mean(perc_water,na.rm=T),
+                  conductivity=mean(conductivity_mSm,na.rm=TRUE)
+)  
+SoilDB$FactMoistureSalinity2026
 
 ```
 
@@ -107,25 +116,24 @@ SoilDB$FactRedox2025
 # set the NAs for clay thickness equal to zero
 # round floodprob to 2 decimals
 
-EnvDat <- 
-  MacrotransectDB$FactElevation2025 |>
-  dplyr::left_join(MacrotransectDB$FactDist2Gully2025, by="TransectPoint_ID") |>
-  dplyr::left_join(SchierTideDB$FactTransProb2025, by="Elevation_m") |>
-  dplyr::left_join(SoilDB$FactProfile2025, by="TransectPoint_ID") |>
-  dplyr::left_join(SoilDB$FactRedox2025, by="TransectPoint_ID") |>
+envdat2026 <- 
+  MacrotransectDB$FactElevation2026 |>
+  dplyr::left_join(MacrotransectDB$FactDist2Gully, by="TransectPoint_ID") |>
+  dplyr::left_join(SchierTideDB$FactTransProb2026, by="Elevation_m")  |>
+  dplyr::left_join(SoilDB$FactProfile2026, by="TransectPoint_ID") |>
+  dplyr::left_join(SoilDB$FactRedox2026, by="TransectPoint_ID") |>
+  dplyr::left_join(SoilDB$FactMoistureSalinity2026, by="TransectPoint_ID") |>
   dplyr::mutate(TransProb=ifelse(is.na(TransProb),0,TransProb),
                 TransProb=round(TransProb,3),
                 Clay_cm=ifelse(is.na(Clay_cm),0,Clay_cm)) |>
   # convert to dataframe with row names required by vegan
   tibble::column_to_rownames(var="TransectPoint_ID")  
-print(EnvDat)  
+print(envdat2026)  
 
 # so for ordination with functions from the vegan library you need an separate environmental factors dataset
 # and a species composition dataset with the same rownames, indicating  the same sites / samples
 # the species data (community composition) need to be in wide format, so we produced this
-vegdat<-VegetationDB$FactVegCov2025
-envdat<-EnvDat
-envdat
+print(vegdat2026)
 
 ```
 
@@ -185,7 +193,7 @@ vegan::orditorp(nmds_veg,dis="sp",priority = SpecTotCov,
 
 ```
 
-## Ordination: compare to a DCA -> decide what ordination we should do, linear or unimodal?
+## Ordination: compare to a DCA -\> decide what ordination we should do, linear or unimodal?
 
 ```{r}
 # how long are the gradients? Should I use linear (PCA)or unimodal method (NMDS, DCA)
@@ -345,7 +353,7 @@ ggplot() +
 
 ```
 
-## Solar park  data
+## Solar park data
 
 ```{r}
 solardat<-read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vR0lG6_OUW42za4evantsfnerkHtud3Yb4T7IeRELBrKf6f3a04xwMXysX2wdPuZmPOGlyG9pBrcoE0/pub?gid=965225171&single=true&output=csv")
@@ -354,7 +362,7 @@ solardat<-read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vR0lG6_OUW42
 
 ```
 
-## Cluster analysis (classification) of  communities
+## Cluster analysis (classification) of communities
 
 ```{r}
 # first calculate a dissimilarity matrix, using Bray-Curtis dissimilarity
@@ -457,4 +465,3 @@ p1/p2/p3/p4/p5/p6
 
 
 ```
-
