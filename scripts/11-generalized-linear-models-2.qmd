@@ -208,6 +208,22 @@ DHARMa::testZeroInflation(simres_glm4)
 AIC(glm3,glm4)
 # AIC of this model is higher, the extra complexity is not justified by better fit
 
+# add a random intercept for Transectpoint_ID (now we shift to a generalized linear mixed model!)
+# This model accounts for the fact that observations from the same transect point are correlated. The fixed effects estimate the average quadratic relationship between elevation and cockle count, while the random intercept allows each transect point to have its own baseline count.
+glm5 <- CockleCount2026 |>
+  dplyr::filter(Elevation_m > 0.25) |>
+  glmmTMB::glmmTMB(
+    cockle_count ~ Elevation_m + I(Elevation_m^2) + (1 | TransectPoint_ID),
+    family = glmmTMB::nbinom2(link = "log"),
+    data = _
+  )
+summary(glm5)
+DHARMa::testDispersion(simres_glm4)
+DHARMa::testUniformity(simres_glm4)
+DHARMa::testZeroInflation(simres_glm4)
+AIC(glm3,glm5)
+
+
 # glmmTMB is not available within geom_smooth, so we will use the glm3 model to predict the number of cockles per transectpoint as a function of elevation, and plot the predicted values along with the observed values.
 
 # make a "prediction grid" with 200 values of elevation between the minimum and maximum elevation in the data, and predict the number of cockles per transectpoint for each value of elevation in the prediction grid, using the glm3 model.
@@ -216,7 +232,8 @@ prediction_grid <- data.frame(
     min(CockleCount2026$Elevation_m, na.rm = TRUE),
     max(CockleCount2026$Elevation_m, na.rm = TRUE),
     length.out = 200
-  )
+  ),
+  TransectPoint_ID = unique(CockleCount2026$TransectPoint_ID)[1]
 ) |>
   dplyr::filter(Elevation_m > 0.25)
 
@@ -224,7 +241,8 @@ prediction_grid <- data.frame(
 models <- list(
   glm1 = glm1,
   glm2 = glm2,
-  glm3 = glm3
+  glm3 = glm3,
+  glm5 = glm5
 )
 
 # add the predicted values of each of the three models to the prediction grid
@@ -243,11 +261,27 @@ predictions_long <- prediction_grid |>
   )
 predictions_long
 
+# Use distinct categorical colors for transect points and fitted models.
+color_levels <- c(
+  sort(unique(as.character(CockleCount2026$TransectPoint_ID))),
+  unique(predictions_long$model)
+)
+set.seed(5831)
+color_values <- setNames(
+  sample(grDevices::colors(distinct = TRUE), length(color_levels)),
+  color_levels
+)
+
 # plot the observation with the three models 
 CockleCount2026 |>
   dplyr::filter(Elevation_m > 0.25) |>
   ggplot2::ggplot(aes(x = Elevation_m, y = cockle_count)) +
-  geom_point(size = 1.5, alpha = 0.7) +
+  geom_jitter(
+    aes(color = factor(TransectPoint_ID)),
+    width = 0.007,
+    height = 0.15,
+    size = 1.5
+  ) +
   geom_line(
     data = predictions_long,
     aes(y = predicted, color = model),
@@ -256,11 +290,13 @@ CockleCount2026 |>
   labs(
     x = "Elevation (m + NAP)",
     y = "number of cockles per 0.068 m2",
-    color = "Model",
+    color = "Transect point / model",
     title = "Predicted cockle counts as a function of elevation (glm3 is the preferred model)"
   ) +
+  scale_color_manual(values = color_values) +
   theme(text = element_text(size = 10))
 
 ```
 
-we find that the number of cockles is highest in the middle of this part of the transect, between transectpoint 170 and 2000, and that the relation between cockle count and elevation is unimodal. The only problem that we have not addresses is that the data are not independent, as the same transectpoint is measured in three replicate plots, that are assumed to have the same elevation. We will address this issue in a next script, by fitting a generalized linear mixed model (GLMM) with transectpoint as a random effect.
+we find that the number of cockles is highest in the middle of this part of the transect, between transectpoint 170 and 2000, and that the relation between cockle count and elevation is unimodal. The only problem that we have not addressesed is that the data are not independent, as the same transectpoint is measured in three replicate plots, that are assumed to have the same elevation. We will address this issue in a next script, by fitting a generalized linear mixed model (GLMM) with transectpoint as a random effect.
+
