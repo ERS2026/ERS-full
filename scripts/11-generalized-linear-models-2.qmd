@@ -50,27 +50,64 @@ Read the cockle data: keep only the data for 2026
 # read the cockle data
 cockledata<-read_gsdb("https://docs.google.com/spreadsheets/d/1E1vUWAHhse7fhjBf94Kiog3Rsj7IkMuFtP-BTQX2oI8")
 
-FactCockleSize2026 <- cockledata$FactCockleSize |>
-  dplyr::filter(Year == 2026, !is.na(TransectPoint_ID)) |>
+# histogram of the size of cockles in 2026
+cockledata$FactCockleSize |>
+  dplyr::filter(Year == 2026, !is.na(TransectPoint_ID),Present==1) |>
+  ggplot2::ggplot(aes(x = Length_mm)) +
+  geom_histogram(binwidth = 1) +
+  labs(x = "length of cockles (mm)", y = "number of cockles")
+
+# define three cohorts (small, medium, large) based on the length of cockles in 2026, representing likely age classes (1, 2, 3 and more years old). We will use these cohorts later to explore whether the relation between cockle size and elevation differs between cohorts.
+cockledata$FactCockleSize <- cockledata$FactCockleSize |>
+  dplyr::mutate(
+    cohort = dplyr::case_when(
+      Length_mm < 15 ~ "young",
+      Length_mm >= 15 & Length_mm <23 ~ "medium",
+      Length_mm >= 23 ~ "old"
+    ),
+    cohort = factor(cohort, levels = c("young", "medium", "old")) # set in right order instead of alphabetical order
+  )
+
+# histogram of the size of cockles in 2026 again now with cohorts
+cockledata$FactCockleSize |>
+  dplyr::filter(Year == 2026, !is.na(TransectPoint_ID),Present==1) |>
+  ggplot2::ggplot(aes(x = Length_mm, fill=cohort)) +
+  geom_histogram(binwidth = 1, boundary=0) +
+  labs(x = "length of cockles (mm)", y = "number of cockles")
+
+# make a list of all plots assessed for cockles in 2026
+CocklePlots2026 <- cockledata$FactCockleSize |>
+  dplyr::filter(Year == 2026) |>
+  dplyr::select(TransectPoint_ID) |>
+  dplyr::distinct()
+
+# sum up  the number of cockles per transect point in 2026.
+CockleCount2026present <- cockledata$FactCockleSize |>
+  dplyr::filter(Year == 2026, !is.na(TransectPoint_ID),Present==1) |>
   dplyr::select(Year, ReplicatePlot_ID, CockleObs_ID, TransectPoint_ID, Length_mm) |>
   dplyr::group_by(TransectPoint_ID) |>
   dplyr::summarise(
-    n_obs = n(),
-    avg_l = mean(Length_mm, na.rm = T),
-    sd_l = sd(Length_mm, na.rm = T), # measure of group variation
-    se_l = sd_l / sqrt(n_obs) # measure of how precise you measure the mean
+    cockle_count = n()
   )
-print(FactCockleSize2026)
+
+# merge the two tables, so that we also have the transect points where no cockles were found in 2026, and replace all `NA` in `n_obs` with zero, and merge with the elevation data for 2026
+CockleCount2026 <- dplyr::left_join(CocklePlots2026, CockleCount2026present, by = "TransectPoint_ID") |>
+    dplyr::left_join(FactElevation2026, by = "TransectPoint_ID") |>
+  dplyr::mutate(cockle_count = tidyr::replace_na(cockle_count, 0)) # replace na by 0
+
+print(CockleCount2026)
 ```
 
-Plot (with a line and points) how the number of cockles changes with distance (`TransectPoint_ID`) along the transect.
+Plot with a linear model how the number of cockles per transectpoint changes with elevation, all fonts size 10
 
 ```{r}
-FactCockleSize2017 |>
-  ggplot2::ggplot(aes(x = TransectPoint_ID, y = n_obs)) +
-  geom_point() +
-  geom_line() +
-  labs(x = "transect point", y = "number of cockles per 3 plots")
+CockleCount2026 |> 
+  dplyr::filter(Elevation_m > 0.25) |>
+  ggplot2::ggplot(aes(x = Elevation_m, y = cockle_count)) +
+  geom_point(size=1) +
+  geom_smooth(method = "lm", formula = "y~x") +
+  labs(x = "Elevation (m + NAP)", y = "number of cockles per 3 plots") +
+  theme(text = element_text(size = 10))
 ```
 
 Merge the cockle and elevation data into a single table, `combidat`, using `TransectPoint_ID` as the common variable between the two tables, and replace all `NA` in `n_obs` with zero.

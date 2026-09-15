@@ -13,8 +13,7 @@ execute:
 
 # 01 Setup your environment
 
-Run the common setup script and synchronize the local project with
-GitHub.
+Run the common setup script and synchronize the local project with GitHub.
 
 ```{r}
 # Run the setup script containing package restoration, helper functions, etc.
@@ -35,12 +34,7 @@ gsheets_auth()
 
 In this script we will work with two online databases, one containing cockle data and the other containing elevation data. We will combine these two databases to explore how the number and size of cockles changes along the transect with elevation.
 
-This example combines two online databases (quickly inspect them in your browser):
-1. the epibenthos database (cockle observations) 
-https://docs.google.com/spreadsheets/d/1E1vUWAHhse7fhjBf94Kiog3Rsj7IkMuFtP-BTQX2oI8
-2.  the elevation database (containing transect elevation measurements)
-https://docs.google.com/spreadsheets/d/1UmpZoNIjo5lXdcpGKuBHe7wFX1Z3AQioeHjzrFgYnxo
-
+This example combines two online databases (quickly inspect them in your browser): 1. the epibenthos database (cockle observations) https://docs.google.com/spreadsheets/d/1E1vUWAHhse7fhjBf94Kiog3Rsj7IkMuFtP-BTQX2oI8 2. the elevation database (containing transect elevation measurements) https://docs.google.com/spreadsheets/d/1UmpZoNIjo5lXdcpGKuBHe7wFX1Z3AQioeHjzrFgYnxo
 
 # 03 Read and combine the data
 
@@ -183,4 +177,4 @@ linreg3 <- stats::lm(avg_l ~ Elevation_m + I(Elevation_m^2), data = Combidat)
 summary(linreg3)
 ```
 
- The unimodal relation between cockle size and elevation is not significant, as the quadratic term is not significant. The linear relation between cockle size and elevation is significant, as the p-value of the linear term is < 0.05. We conclude that bigger cockles just  found lower on the transect, without evidence for an optimum. 
+The unimodal relation between cockle size and elevation is not significant, as the quadratic term is not significant. The linear relation between cockle size and elevation is significant, as the p-value of the linear term is \< 0.05. We conclude that bigger cockles just found lower on the transect, without evidence for an optimum.
