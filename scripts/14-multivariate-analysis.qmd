@@ -25,6 +25,7 @@ library(vegan) # for DCA, RDA
 library(psych)
 library(ape) # for PCoA
 library(ggrepel) # for avoiding overlapping labels in ggplot
+library(ggvegan) # for plotting ordinations in ggplot
 
 ```
 
@@ -55,7 +56,7 @@ vegdat2026
 Now read the different environmental variables from the separate databases and combine them with into a single dataset `envdat2026`. This dataset will contain the environmental variables for the same plots as in `vegdat2026`. Not that we can only use environmental variables that are measured for all plots, otherwise we will have missing values (NAs) in the dataset. We will remove those plots with NAs from the dataset, as the ordination analyses linking community composition to environmental variables require complete cases for both datasets. If you do not want that, you can also remove specific sites from the environmental dataset (that have NAs for some variable) but then you will have to remove those sites from the vegetation dataset as well.
 
 ```{r}
-# 2) read and filter the macrotransect elevation data for 2026
+# dataset 1: macrotransect elevation data for 2026
 MacrotransectDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1UmpZoNIjo5lXdcpGKuBHe7wFX1Z3AQioeHjzrFgYnxo",
                            sheet=c("FactElevation","FactDist2Gully"))
 MacrotransectDB$FactElevation2026 <- MacrotransectDB$FactElevation |>
@@ -69,7 +70,7 @@ MacrotransectDB$FactDist2Gully <- MacrotransectDB$FactDist2Gully |>
   dplyr::select(TransectPoint_ID,Dist2Gully_m)   
 print(MacrotransectDB$FactDist2Gully,n=25)
 
-# 3) read the transgression probability (proportion of the time of  the growing season flooded) of different elevations (per cm)
+# dataset 2: transgression probability (proportion of the time of  the growing season flooded) of different elevations (per cm)
 # from 1 april - 30 aug
 SchierTideDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1DOzvscotzWXm5MmEFrZhvPY820weEZVcSfUYz_5Gyf4",
                         sheets="FactTransProb") 
@@ -79,9 +80,12 @@ SchierTideDB$FactTransProb2026<-SchierTideDB$FactTransProb |>
 SchierTideDB$FactTransProb2026
 
 
-# 4) read the clay thickness and redox potential from the soil  database
+
+# read the soil  database
 SoilDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1oHYCBlLR47Pxov5iF8PS_71lIRJwxgUfAP_t8JumJ7o",
                   sheet=c("FactProfile","FactRedox", "FactMoistureSalinity"))
+
+# dataset 3: clay thickness
 SoilDB$FactProfile2026<-SoilDB$FactProfile |>
   dplyr::filter(Year==2026 & SoilType_ID %in% c("clay","clay-organic") & TransectPoint_ID <= 1050) |>
   dplyr::select(TransectPoint_ID,corrected_depth) |>     
@@ -89,7 +93,7 @@ SoilDB$FactProfile2026<-SoilDB$FactProfile |>
   dplyr::summarize(Clay_cm=mean(corrected_depth,na.rm=T)) #calculate average clay layer thickness  for each pole
 SoilDB$FactProfile2026
 
-# read redox
+# dataset 4:  redox
 SoilDB$FactRedox2026<-SoilDB$FactRedox |>
   dplyr::filter(Year==2026 & TransectPoint_ID <= 1050) |>
   dplyr::group_by(TransectPoint_ID,ProbeDepth) |>
@@ -100,7 +104,7 @@ SoilDB$FactRedox2026<-SoilDB$FactRedox |>
                      values_from = redox_mV)
 SoilDB$FactRedox2026
 
-# read moisture and sality
+# dataset 5+6: moisture and conductivity
 SoilDB$FactMoistureSalinity2026<-SoilDB$FactMoistureSalinity |>
   dplyr::filter(Year==2026 & TransectPoint_ID <= 1050 ) |>
   dplyr::group_by(TransectPoint_ID) |>
@@ -110,7 +114,7 @@ SoilDB$FactMoistureSalinity2026<-SoilDB$FactMoistureSalinity |>
 SoilDB$FactMoistureSalinity2026
 
 
-# Merge all datafiles red so far in this codeblock into a single file EnvDat
+# Merge all separate datafiles red so far in this codeblock into a single dataframe EnvDat
 # use a sequential join operation in a pipe
 # set distance_m as the row names of the  tibble
 # set the NAs for floodprop equal to zero
@@ -137,22 +141,24 @@ print(envdat2026)
 ```
 
 ## Explore the correlations among the environmental factors in a panel pairs plot
+A pairs panel plot is a good way to inspect the correlations among the environmental factors. The diagonal shows the distribution of each variable, the lower triangle shows scatterplots of each pair of variables, and the upper triangle shows the correlation coefficients. Note that the units of the different environmental variables are very different, so it is important to use a correlation coefficient that is not sensitive to differences in scale, such as Spearman's rank correlation coefficient. This plot also helps you to identify collinearity among the environmental variables, which can be a problem in multivariate analyses. If two variables are highly correlated, you may want to remove one of them from the analysis. Also it helps you detect clear outliers, which may represent data entry mistakes or extreme values that may influence the results of the analysis. In that case, you may want to remove those outliers from the analysis.
 
 ```{r}
 # using the spearman rank-correlation coefficient
 psych::pairs.panels(envdat2026,smooth=F,ci=T,ellipses=F,stars=T,method="spearman")
-# note that the units are very different! 
 
 ```
 
 ## Ordination: run a Principal Component Analysis (PCA) on the environmental data
-
+We start with a PCA on the environmental data, to reduce the dimensionality of the environmental data and to identify the main environmental gradients our study design. The PCA is a linear ordination method, which assumes that the environmental factors  respond linearly to the environmental gradients. 
+It is important to use .scale=T as a parameter of the PCA. The PCA is then based on the correlation matrix of the environmental variables, which means that the variables are standardized to have a mean of zero and a standard deviation of one. This is important because environmental variables are typically measured in different units and have widely different ranges. The PCA will produce a set of orthogonal axes (principal components) that explain the maximum amount of variation in the data. The first principal component (PC1) explains the most variation, followed by PC2, PC3, etc. You can see these as main environmental gradients represented by multiple environmental variables. We then visualize the PCA results with a biplot, which shows the scores of the sites (plots) and the loadings (scores) of the environmentalvariables on the first two principal components. The loadings indicate how much each variable contributes to each principal component. The biplot can help you identify which environmental variables are most important in explaining the variation in the data, which ones are highly correlated and how the sites (plots) are distributed along the main environmental gradients.
 ```{r}
-# .scale=T means: use correlations instead of covariances
-# use .scale=T for datasets where the variables are measured in different use
 
 # do a principal component analysis (pca) 
-pca_env<-prcomp(envdat2026,center=T,scale=T)
+# note that an RDA without explanatory variables is equivalent to a PCA
+# we use this for consistency with the other ordination methods (CCA, RDA, NMDS) for which we also use the vegan package
+# this leads to consistency in the type of output and the way we can visualize the results
+pca_env<-vegan::rda(envdat2026,center=T,scale=T)
 pca_env
 summary(pca_env)
 
