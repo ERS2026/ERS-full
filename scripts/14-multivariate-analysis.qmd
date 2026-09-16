@@ -30,7 +30,7 @@ library(ggrepel) # for avoiding overlapping labels in ggplot
 
 # 02 Read and combine the datasets
 
-We will work with the vegetation data of 2026
+We will work with the vegetation data of 2026. First read the vegetation data into the `vegdat2026` dataframe. For ordination with functions from the vegan library you need an separate environmental factors dataset and a species composition dataset with the same rownames, indicating the same sites / samples the species data (community composition) need to be in wide format, so we produced this with `tibble::column_to_rownames()`. But do not convert it to a tibble, because the rownames are important for the ordination analyses and they are lost upon converion to a tibble. The environmental dataset will be created in the next code block, and will need to have the same rownames as the vegetation dataset, so that the ordination analyses can link the two datasets. In both files, the rownames are the plot numbers (TransectPoint_ID) and the columns are the species names (for the vegetation dataset) or the environmental variables (for the environmental dataset).
 
 ```{r}
 
@@ -50,7 +50,11 @@ vegdat2026<-VegetationDB$FactVegCov |>
   dplyr::select(which(colSums(.) != 0)) 
   # this needs to stay a datafram (because of the row numbers, do not make it a tibble)
 vegdat2026
+```
 
+Now read the different environmental variables from the separate databases and combine them with into a single dataset `envdat2026`. This dataset will contain the environmental variables for the same plots as in `vegdat2026`. Not that we can only use environmental variables that are measured for all plots, otherwise we will have missing values (NAs) in the dataset. We will remove those plots with NAs from the dataset, as the ordination analyses linking community composition to environmental variables require complete cases for both datasets. If you do not want that, you can also remove specific sites from the environmental dataset (that have NAs for some variable) but then you will have to remove those sites from the vegetation dataset as well.
+
+```{r}
 # 2) read and filter the macrotransect elevation data for 2026
 MacrotransectDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1UmpZoNIjo5lXdcpGKuBHe7wFX1Z3AQioeHjzrFgYnxo",
                            sheet=c("FactElevation","FactDist2Gully"))
@@ -105,12 +109,9 @@ SoilDB$FactMoistureSalinity2026<-SoilDB$FactMoistureSalinity |>
 )  
 SoilDB$FactMoistureSalinity2026
 
-```
 
-## Merge all previous 2025 datafiles into a single file EnvDat
-
-```{r}
-# a sequential join operation in a pipe
+# Merge all datafiles red so far in this codeblock into a single file EnvDat
+# use a sequential join operation in a pipe
 # set distance_m as the row names of the  tibble
 # set the NAs for floodprop equal to zero
 # set the NAs for clay thickness equal to zero
@@ -128,14 +129,10 @@ envdat2026 <-
                 Clay_cm=ifelse(is.na(Clay_cm),0,Clay_cm)) |>
   # convert to dataframe with row names required by vegan
   tibble::column_to_rownames(var="TransectPoint_ID")  |>
-  #only retain complete cases
+  #only retain complete cases - important!!
   tidyr::drop_na()
 print(envdat2026)  
 
-# so for ordination with functions from the vegan library you need an separate environmental factors dataset
-# and a species composition dataset with the same rownames, indicating  the same sites / samples
-# the species data (community composition) need to be in wide format, so we produced this
-print(vegdat2026)
 
 ```
 
