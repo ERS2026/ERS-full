@@ -299,4 +299,3 @@ CockleCount2026 |>
 ```
 
 we find that the number of cockles is highest in the middle of this part of the transect, between transectpoint 170 and 2000, and that the relation between cockle count and elevation is unimodal. The only problem that we have not addressesed is that the data are not independent, as the same transectpoint is measured in three replicate plots, that are assumed to have the same elevation. We will address this issue in a next script, by fitting a generalized linear mixed model (GLMM) with transectpoint as a random effect.
-
