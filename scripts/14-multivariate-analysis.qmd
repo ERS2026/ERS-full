@@ -275,7 +275,7 @@ anova(cca,by="term", permutations=999)
 ## Do a principal coordinate analysis PCoA
 
 ```{r}
-dist_mat <- vegdist(vegdat2026, method = "bray")
+dist_mat <- vegdist(vegdat2026sel, method = "bray")
 pcoa_res <- ape::pcoa(dist_mat)
 # extract the coordinates
 scores <- as.data.frame(pcoa_res$vectors[,1:2])
@@ -300,7 +300,8 @@ ggplot() +
 
 # repeat with a different dissimilarity measure, e.g. Hellinger
 # 1. Hellinger transform
-vegdat_hel <- decostand(vegdat2026, method = "hellinger")
+vegdat_hel <- decostand(vegdat2026sel, method = "hellinger")
+vegdat_hel
 # 2. PCA (=unconstrained RDA), when data are hellinger transformed this is equivalent to a PCoA with euclidean distance on the original data 
 rda_res <- vegan::rda(vegdat_hel)
 # 3. Site scores
