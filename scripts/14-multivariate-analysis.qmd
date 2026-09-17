@@ -169,18 +169,34 @@ pca_env<-vegan::rda(envdat2026uncor,center=T,scale=T)
 pca_env
 summary(pca_env)
 
-# Make a biplot of the PCA results, with site codes as labels.
-ggvegan::autoplot(
-  pca_env,
-  geom = "text",
-  layers = c("species", "sites", "biplot"),
-  arrows = TRUE,
-  title = "PCA biplot of environmental variables",
-  xlab = "PC1 (64%)",
-  ylab = "PC2 (16%)"
-) +
-  ggplot2::theme_bw() +
-  ggplot2::theme(aspect.ratio = 1)
+
+## Make a biplot of the PCA results, with site codes as labels.
+# extract species and sites scores from the ordination result
+sites <- as.data.frame(vegan::scores(pca_env, display="sites", choices = 1:2))
+sites$site <- rownames(sites)
+species <- as.data.frame(vegan::scores(pca_env, display="species", choices = 1:2))
+species$species <- rownames(species)
+
+## Make the plot
+ggplot() +
+  geom_segment(
+    data = species,
+    aes(x = 0, y = 0, xend = PC1, yend = PC2),
+    arrow = grid::arrow(length = grid::unit(0.15, "cm")),
+    color = "red"
+  ) +
+  geom_text_repel(
+    data = sites, col="blue", size=4,
+    aes(x = PC1, y = PC2, label = site)
+  ) +
+  geom_text_repel(
+    data = species, col="red", size=4,
+    aes(x = PC1, y = PC2, label = species)
+  ) +
+  labs(x = "DCA1", y = "DCA2") +
+  coord_equal() +
+  theme_classic(base_size = 12) +
+  theme(aspect.ratio = 1)
 
 ```
 
@@ -205,17 +221,27 @@ dca
 A rule of thumb is that when this length is \<3, you can use a PCA or RDA. When the length is \>4, you should use a unimodal method such as DCA or CCA. In this case, the length of the first axis is about 8 standard deviations of species responses, which indicates that the species composition data have a strong unimodal response to environmental gradients. Therefore, we will continue with DCA for the ordination of the species composition data. Not that in a DCA plot we do not use arrows for the species, as their score does not represent a linear gradient. Instead, the score of a species now represents their ecological optimum. Species that are close to each other in the DCA plot co-occur under the same environmental conditions, and species that are far apart have different ecological optima. The same applies to the sites (plots). Sites that are close to each other in the DCA plot have similar species composition, and sites that are far apart have different species composition. The DCA plot can help you identify patterns in species composition and how they relate to environmental gradients, as inferred from the species composition data.
 
 ```{r}
-# plot the dca ordination with site codes as labels using ggvegan::autoplot
-ggvegan::autoplot(
-  dca,
-  geom = "text",
-  layers = c("species", "sites"),
-  title = "DCA biplot of species composition",
-  xlab = "DCA1 (0.55)",
-  ylab = "DCA2 (0.35)"
-) +
-  ggplot2::theme_bw() +
-  ggplot2::theme(aspect.ratio = 1)
+### plot the dca ordination with site codes as labels using ggvegan::autoplot
+# extract species and sites scores from the ordination result
+sites <- as.data.frame(scores(dca, display="sites", choices = 1:2))
+sites$site <- rownames(sites)
+species <- as.data.frame(scores(dca, display="species", choices = 1:2))
+species$species <- rownames(species)
+
+## Make the plot
+ggplot() +
+  geom_text_repel(
+    data = sites, col="blue", size=4,
+    aes(x = DCA1, y = DCA2, label = site)
+  ) +
+  geom_text_repel(
+    data = species, col="red", size=4,
+    aes(x = DCA1, y = DCA2, label = species)
+  ) +
+  labs(x = "DCA1", y = "DCA2") +
+  coord_equal() +
+  theme_classic(base_size = 12) +
+  theme(aspect.ratio = 1)
 
 ```
 
@@ -308,7 +334,6 @@ PCoA<-vegan::wcmdscale(vegdist_bray, k = 2, eig = TRUE, add = TRUE)
 # Site scores
 sites <- as.data.frame(scores(PCoA, choices = 1:2))
 sites$site <- rownames(sites)
-
 # Species scores (averages of site scores weighted by species abundance)
 species <- as.data.frame(
   wascores(
@@ -316,23 +341,24 @@ species <- as.data.frame(
     vegdat2026sel
   )
 )
+# set rown names of species as a column for plotting
 species$species <- rownames(species)
 
 # Make the plot
 ggplot() +
   geom_text_repel(
-    data = sites, col="blue", size=4,
+    data = sites, col="blue", size=3,
     aes(x = Dim1, y = Dim2, label = site)
   ) +
   geom_text_repel(
-    data = species, col="red",
+    data = species, col="red", size=3,
     aes(x = Dim1, y = Dim2, label = species)
   ) +
   labs(x="PCoA1", y="PCoA2") +
   coord_equal() +
-  theme_classic(base_size = 14) 
+  theme_classic(base_size = 10) 
 
-
+ggsave(here::here("figures/script14", "PCoA_biplot.png"), width = 1200, height = 1200, units="px")
 
 
 
