@@ -79,8 +79,6 @@ SchierTideDB$FactTransProb2026<-SchierTideDB$FactTransProb |>
   dplyr::select(Elevation_m,TransProb)
 SchierTideDB$FactTransProb2026
 
-
-
 # read the soil  database
 SoilDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1oHYCBlLR47Pxov5iF8PS_71lIRJwxgUfAP_t8JumJ7o",
                   sheet=c("FactProfile","FactRedox", "FactMoistureSalinity"))
@@ -88,7 +86,7 @@ SoilDB<-read_gsdb("https://docs.google.com/spreadsheets/d/1oHYCBlLR47Pxov5iF8PS_
 # dataset 3: clay thickness
 SoilDB$FactProfile2026<-SoilDB$FactProfile |>
   dplyr::filter(Year==2026 & SoilType_ID %in% c("clay","clay-organic") & TransectPoint_ID <= 1050) |>
-  dplyr::select(TransectPoint_ID,corrected_depth) |>     
+  dplyr::select(TransectPoint_ID, corrected_depth)  |>     
   group_by(TransectPoint_ID) |> 
   dplyr::summarize(Clay_cm=mean(corrected_depth,na.rm=T)) #calculate average clay layer thickness  for each pole
 SoilDB$FactProfile2026
