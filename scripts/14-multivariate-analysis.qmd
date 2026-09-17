@@ -357,19 +357,17 @@ ggplot() +
 The PCA, DCA, and CCA are all ordination methods thatassume that the species abundances have a linear or unimodal response to the environmental gradients. When we use such methods, we explore what are the main environmental gradients affecting the species composition. However, in many cases, we are not so much interested in underlying gradients, but more in the similarity of species compostion between (groups of) sites. For example when we do a field experiment or when we want to compare the species composition between different land management regimes. In that case, a PCoA is a good method to use. PCoA is based on a distance matrix, which quantifies the dissimilarity in species composition between each pair of plots. The PCoA then tries to represent these dissimilarities in a low-dimensional space (usually 2D or 3D) while preserving the rank order of the dissimilarities as much as possible. Different dissimilarity measures can be used, depending on the type of data and the research question. 
 
 ```{r}
-<<<<<<< HEAD
-dist_mat <- vegan::vegdist(vegdat2026sel, method = "bray")
-=======
-
-dist_mat <- vegdist(vegdat2026sel, method = "bray")
->>>>>>> e9ce1e5b753f17edc5c7b653f522270ecb8525fe
-pcoa_res <- ape::pcoa(dist_mat)
+# calculate the distance matrix using Bray-Curtis dissimilarity
+dist_mat <- vegan::vegdist(vegdat2026sel, method = "hellinger")
+# calculate the PCoA using this distance matrix
+pcoa_res <- vegan::wcmdscale(dist_mat, k = 2, eig = TRUE, add = "lingoes")
 
 # Extract site coordinates and variance explained.
-sites <- as.data.frame(pcoa_res$vectors[, 1:2])
+sites <- as.data.frame(pcoa_res$points)
 names(sites) <- c("PCoA1", "PCoA2")
 sites$site <- rownames(sites)
-var_exp <- round(pcoa_res$values$Relative_eig[1:2] * 100, 1)
+var_exp <- round(pcoa_res$eig / sum(pcoa_res$eig) * 100, 1)[1:2]
+sites
 
 # Approximate species scores as weighted averages of site scores.
 species <- as.data.frame(
@@ -378,7 +376,8 @@ species <- as.data.frame(
     vegdat2026sel
   )
 )
-names(species) <- c("PCoA1", "PCoA2")
+sites
+species
 species$species <- rownames(species)
 
 # Fit environmental factors to the PCoA site scores.
@@ -387,32 +386,28 @@ spfit <- vegan::envfit(
   envdat2026sel,
   permutations = 999
 )
+spfit
 
-environment <- as.data.frame(
+environmentalfactors <- as.data.frame(
   vegan::scores(spfit, display = "vectors")
 )
-names(environment) <- c("PCoA1", "PCoA2")
-environment$variable <- rownames(environment)
+environmentalfactors
 
-# Scale arrows for display; lengths are not effect sizes.
-arrow_scale <- 0.8 / max(abs(as.matrix(environment[, c("PCoA1", "PCoA2")])) )
-environment <- environment |>
-  dplyr::mutate(
-    PCoA1 = PCoA1 * arrow_scale,
-    PCoA2 = PCoA2 * arrow_scale
-  )
+environmentalfactors$environmentalfactor <- rownames(environmentalfactors)
+
+
 
 # Make the PCoA biplot.
 ggplot2::ggplot() +
   ggplot2::geom_segment(
-    data = environment,
+    data = environmentalfactors,
     ggplot2::aes(x = 0, y = 0, xend = PCoA1, yend = PCoA2),
     arrow = grid::arrow(length = grid::unit(0.15, "cm")),
     color = "darkgreen"
   ) +
   ggrepel::geom_text_repel(
-    data = environment,
-    ggplot2::aes(PCoA1, PCoA2, label = variable),
+    data = environmentalfactors,
+    ggplot2::aes(PCoA1, PCoA2, label = environmentalfactor),
     color = "darkgreen",
     size = 4
   ) +
@@ -448,52 +443,18 @@ ggplot2::ggplot() +
   ggplot2::theme_classic(base_size = 12) +
   ggplot2::theme(aspect.ratio = 1)
 
-# repeat with a different dissimilarity measure, e.g. Hellinger
-# 1. Hellinger transform
-vegdat_hel <- decostand(vegdat2026sel, method = "hellinger")
-vegdat_hel
-# 2. PCA (=unconstrained RDA), when data are hellinger transformed this is equivalent to a PCoA with euclidean distance on the original data 
-rda_res <- vegan::rda(vegdat_hel)
-# 3. Site scores
-scores_hel <- as.data.frame(scores(rda_res, display = "sites")[,1:2])
-names(scores_hel) <- c("PCA1","PCA2")
-scores_hel$Plot_ID <- rownames(scores_hel)
-scores_hel
-# 4. Species scores
-sp_hel <- as.data.frame(scores(rda_res, display = "species")[,1:2])
-names(sp_hel) <- c("PCA1","PCA2")
-sp_hel$Species <- rownames(sp_hel)
-sp_hel
-# 5. % variance explained
-var_exp_hel <- round(summary(rda_res)$cont$importance[2,1:2] * 100, 1)
-# 6. Plot
-ggplot() +
-  geom_point(data = scores_hel, aes(PCA1, PCA2), size = 2) +
-  geom_text_repel(data = scores_hel,
-                  aes(PCA1, PCA2, label = Plot_ID),
-                  size = 3) +
-  geom_point(data = sp_hel, aes(PCA1, PCA2), shape = 3) +
-  geom_text_repel(data = sp_hel,
-                  aes(PCA1, PCA2, label = Species),
-                  size = 3) +
-  xlab(paste0("Axis 1 (", var_exp_hel[1], "%)")) +
-  ylab(paste0("Axis 2 (", var_exp_hel[2], "%)")) +
-  theme_classic()
+
 ```
 
 # Ordination: NMDS
-Similar to PCoA, NMDS is asking how similar the species composition of the different plots is. An NMDS is a non-linear ordination method, which does not assume a linear relationship between the species composition and the environmental variables. The NMDS is based on a distance matrix, which quantifies the dissimilarity in species composition between each pair of plots, depending on the dissimilarity measure used. The NMDS then tries to represent these dissimilarities in a low-dimensional space (usually 2D or 3D) while preserving the **rank order** of the dissimilarities as much as possible. The NMDS is particularly useful for ecological data, which often have non-linear relationships and complex interactions between species and environmental variables. But it can also be less informative than a DCA; as it visually overestimates often the importance of the second axis, and it does not provide information on the ecological optima of the species, the importance of axes, and of gradient lengths. All ordination axes are scaled to the same length, which is not the case in DCA. Therefore, we will prefer DCA for the ordination of the species composition data, and NMDS only as a complementary method to visualize the dissimilarity in species composition between plots.
+An NMDS (non-metric multidimensional scaling) can be seen as a 'non-parametric' PCoA. Similar to a PcOA it orders sites in an ordination space where more similar sites are put closer together. But in contrast with PCOA, it does not use the actual dissimilarity but just the rank-order differences.  It is typicallyless informative than a DCA; as it visually overestimates often the importance of the second axis, and it does not provide information on the ecological optima of the species, the importance of axes, and of gradient lengths. All ordination axes are scaled to the same length, which is not the case in DCA. Therefore, we will prefer DCA for the ordination of the species composition data, and NMDS only as a complementary method to visualize the dissimilarity in species composition between plots.
 
 ```{r}
 # filter the vegetation data for those plots that are retained in envdat2026 dataset
-vegdat2026 <- vegdat2026[rownames(vegdat2026) %in% rownames(envdat2026), ]
 
-# explore the distance (dissimilarity) in species composition between plots
-vegdat2026
-d1<-vegan::vegdist(vegdat2026,method="euclidean") # Euclidean dissimilarity
-d1
-d2<-vegan::vegdist(vegdat2026,method="bray") # Bray-Curtis dissimilarity
-d2
+# calculate the dissimilarity matrix (Bray-Curtis is typically used)
+distbray<-vegan::vegdist(vegdat2026,method="bray") # Bray-Curtis dissimilarity
+distbray
 
 
 # non-metric multidimension scaling / indirect gradient analysis (only species composition)
