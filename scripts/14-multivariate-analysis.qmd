@@ -354,8 +354,15 @@ ggplot() +
 # ordination: PCoA
 ## Do a principal coordinate analysis PCoA
 
+The PCA, DCA, and CCA are all ordination methods thatassume that the species abundances have a linear or unimodal response to the environmental gradients. When we use such methods, we explore what are the main environmental gradients affecting the species composition. However, in many cases, we are not so much interested in underlying gradients, but more in the similarity of species compostion between (groups of) sites. For example when we do a field experiment or when we want to compare the species composition between different land management regimes. In that case, a PCoA is a good method to use. PCoA is based on a distance matrix, which quantifies the dissimilarity in species composition between each pair of plots. The PCoA then tries to represent these dissimilarities in a low-dimensional space (usually 2D or 3D) while preserving the rank order of the dissimilarities as much as possible. Different dissimilarity measures can be used, depending on the type of data and the research question. 
+
 ```{r}
+<<<<<<< HEAD
 dist_mat <- vegan::vegdist(vegdat2026sel, method = "bray")
+=======
+
+dist_mat <- vegdist(vegdat2026sel, method = "bray")
+>>>>>>> e9ce1e5b753f17edc5c7b653f522270ecb8525fe
 pcoa_res <- ape::pcoa(dist_mat)
 
 # Extract site coordinates and variance explained.
