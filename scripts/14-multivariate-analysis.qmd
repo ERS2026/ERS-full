@@ -349,3 +349,256 @@ ggplot() +
   coord_equal() +
   theme_classic(base_size = 12)
 ```
+
+
+# ordination: PCoA
+## Do a principal coordinate analysis PCoA
+
+```{r}
+dist_mat <- vegan::vegdist(vegdat2026sel, method = "bray")
+pcoa_res <- ape::pcoa(dist_mat)
+
+# Extract site coordinates and variance explained.
+sites <- as.data.frame(pcoa_res$vectors[, 1:2])
+names(sites) <- c("PCoA1", "PCoA2")
+sites$site <- rownames(sites)
+var_exp <- round(pcoa_res$values$Relative_eig[1:2] * 100, 1)
+
+# Approximate species scores as weighted averages of site scores.
+species <- as.data.frame(
+  vegan::wascores(
+    sites[, c("PCoA1", "PCoA2")],
+    vegdat2026sel
+  )
+)
+names(species) <- c("PCoA1", "PCoA2")
+species$species <- rownames(species)
+
+# Fit environmental factors to the PCoA site scores.
+spfit <- vegan::envfit(
+  sites[, c("PCoA1", "PCoA2")],
+  envdat2026sel,
+  permutations = 999
+)
+
+environment <- as.data.frame(
+  vegan::scores(spfit, display = "vectors")
+)
+names(environment) <- c("PCoA1", "PCoA2")
+environment$variable <- rownames(environment)
+
+# Scale arrows for display; lengths are not effect sizes.
+arrow_scale <- 0.8 / max(abs(as.matrix(environment[, c("PCoA1", "PCoA2")])) )
+environment <- environment |>
+  dplyr::mutate(
+    PCoA1 = PCoA1 * arrow_scale,
+    PCoA2 = PCoA2 * arrow_scale
+  )
+
+# Make the PCoA biplot.
+ggplot2::ggplot() +
+  ggplot2::geom_segment(
+    data = environment,
+    ggplot2::aes(x = 0, y = 0, xend = PCoA1, yend = PCoA2),
+    arrow = grid::arrow(length = grid::unit(0.15, "cm")),
+    color = "darkgreen"
+  ) +
+  ggrepel::geom_text_repel(
+    data = environment,
+    ggplot2::aes(PCoA1, PCoA2, label = variable),
+    color = "darkgreen",
+    size = 4
+  ) +
+  ggplot2::geom_point(
+    data = sites,
+    ggplot2::aes(PCoA1, PCoA2),
+    color = "blue",
+    size = 2
+  ) +
+  ggrepel::geom_text_repel(
+    data = sites,
+    ggplot2::aes(PCoA1, PCoA2, label = site),
+    color = "blue",
+    size = 4
+  ) +
+  ggplot2::geom_point(
+    data = species,
+    ggplot2::aes(PCoA1, PCoA2),
+    shape = 3,
+    color = "red"
+  ) +
+  ggrepel::geom_text_repel(
+    data = species,
+    ggplot2::aes(PCoA1, PCoA2, label = species),
+    color = "red",
+    size = 4
+  ) +
+  ggplot2::labs(
+    x = paste0("PCoA1 (", var_exp[1], "%)"),
+    y = paste0("PCoA2 (", var_exp[2], "%)")
+  ) +
+  ggplot2::coord_equal() +
+  ggplot2::theme_classic(base_size = 12) +
+  ggplot2::theme(aspect.ratio = 1)
+
+# repeat with a different dissimilarity measure, e.g. Hellinger
+# 1. Hellinger transform
+vegdat_hel <- decostand(vegdat2026sel, method = "hellinger")
+vegdat_hel
+# 2. PCA (=unconstrained RDA), when data are hellinger transformed this is equivalent to a PCoA with euclidean distance on the original data 
+rda_res <- vegan::rda(vegdat_hel)
+# 3. Site scores
+scores_hel <- as.data.frame(scores(rda_res, display = "sites")[,1:2])
+names(scores_hel) <- c("PCA1","PCA2")
+scores_hel$Plot_ID <- rownames(scores_hel)
+scores_hel
+# 4. Species scores
+sp_hel <- as.data.frame(scores(rda_res, display = "species")[,1:2])
+names(sp_hel) <- c("PCA1","PCA2")
+sp_hel$Species <- rownames(sp_hel)
+sp_hel
+# 5. % variance explained
+var_exp_hel <- round(summary(rda_res)$cont$importance[2,1:2] * 100, 1)
+# 6. Plot
+ggplot() +
+  geom_point(data = scores_hel, aes(PCA1, PCA2), size = 2) +
+  geom_text_repel(data = scores_hel,
+                  aes(PCA1, PCA2, label = Plot_ID),
+                  size = 3) +
+  geom_point(data = sp_hel, aes(PCA1, PCA2), shape = 3) +
+  geom_text_repel(data = sp_hel,
+                  aes(PCA1, PCA2, label = Species),
+                  size = 3) +
+  xlab(paste0("Axis 1 (", var_exp_hel[1], "%)")) +
+  ylab(paste0("Axis 2 (", var_exp_hel[2], "%)")) +
+  theme_classic()
+```
+
+# Ordination: NMDS
+Similar to PCoA, NMDS is asking how similar the species composition of the different plots is. An NMDS is a non-linear ordination method, which does not assume a linear relationship between the species composition and the environmental variables. The NMDS is based on a distance matrix, which quantifies the dissimilarity in species composition between each pair of plots, depending on the dissimilarity measure used. The NMDS then tries to represent these dissimilarities in a low-dimensional space (usually 2D or 3D) while preserving the **rank order** of the dissimilarities as much as possible. The NMDS is particularly useful for ecological data, which often have non-linear relationships and complex interactions between species and environmental variables. But it can also be less informative than a DCA; as it visually overestimates often the importance of the second axis, and it does not provide information on the ecological optima of the species, the importance of axes, and of gradient lengths. All ordination axes are scaled to the same length, which is not the case in DCA. Therefore, we will prefer DCA for the ordination of the species composition data, and NMDS only as a complementary method to visualize the dissimilarity in species composition between plots.
+
+```{r}
+# filter the vegetation data for those plots that are retained in envdat2026 dataset
+vegdat2026 <- vegdat2026[rownames(vegdat2026) %in% rownames(envdat2026), ]
+
+# explore the distance (dissimilarity) in species composition between plots
+vegdat2026
+d1<-vegan::vegdist(vegdat2026,method="euclidean") # Euclidean dissimilarity
+d1
+d2<-vegan::vegdist(vegdat2026,method="bray") # Bray-Curtis dissimilarity
+d2
+
+
+# non-metric multidimension scaling / indirect gradient analysis (only species composition)
+nmds_veg<-metaMDS(vegdat2026,k=2,trace=F,trymax=1000,distance="bray")
+nmds_veg
+vegan::ordiplot(nmds_veg,type="t")
+# and show the ordination with the most abundance species with priority
+SpecTotCov<-colSums(vegdat2026)
+vegan::ordiplot(nmds_veg,display="sites",cex=1,type="t")
+vegan::orditorp(nmds_veg,dis="sp",priority = SpecTotCov,
+                col="red",pcol = "red",pch="+",cex=1.1)
+
+```
+
+
+# Cluster analysis (classification) of communities
+
+```{r}
+# first calculate a dissimilarity matrix, using Bray-Curtis dissimilarity
+d<-vegan::vegdist(vegdat2026,method="bray")
+d
+
+# show the dissimilarity matrix (1= completely different, 0= exactly the same)
+
+# now cluster the sites based on similarity in species composition 
+# using average linkage as the sorting algorithm
+cavg<-hclust(d,method="average")
+plot(cavg)
+
+
+# show the dendrogram and cut it in 5 communities
+rect.hclust(cavg,5)
+clust<-cutree(cavg,5)
+clust<-factor(clust)
+clust
+
+# do indicator species analysis - which species characterize each cluster? 
+library(indicspecies)
+set.seed(123) # for reproducibility
+indval <- multipatt(vegdat2026, clust, 
+                    func = "IndVal.g", duleg = F, 
+                    control = how(nperm = 999))
+summary(indval,indivalcomp=TRUE)
+```
+
+## Add the clustering of plots to your DCA ordination
+
+```{r}
+vegan::ordiplot(dca,display="sites",cex=0.7,type="text",xlim=c(-5,5))
+vegan::orditorp(dca,dis="sp", priority=SpecTotCov,
+                col="red",pcol="red",pch="+",cex=0.8,xlim=c(-5,5))
+vegan::ordihull(dca,clust,lty=1,col="blue",lwd=2)
+
+
+
+#add the vegetation type to the environmental data
+envdat2026_2<-envdat2026 |>
+  dplyr::mutate(vegtype=clust)
+envdat2026_2 |> as_tibble()
+
+
+# name the different communities that you identified
+levels(envdat2$vegtype)<-c("Dune","High saltmarsh", 
+                           "Mid Saltmarsh", "Low saltmarsh", "Pioneer")
+
+
+# show boxplot of elevation differences between vegetation types
+p1<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Elevation_m)) +
+  geom_boxplot(fill="brown") +
+  xlab(NULL) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks = element_blank())
+p1
+
+# show boxplot of flooding probability differences between vegetation types
+p2<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=TransProb)) +
+  geom_boxplot(fill="blue") +
+  xlab(NULL) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+p2
+
+# show boxplot of clay thickness differences between vegetation types
+p3<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Clay_cm)) +
+  geom_boxplot(fill="green") +
+  xlab(NULL) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+p3
+
+# show boxplot of distance to gully  between vegetation types
+p4<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Dist2Gully_m)) +
+  geom_boxplot(fill="orange") +
+  xlab(NULL) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+p4
+
+p5<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Redox5)) +
+  geom_boxplot(fill="purple") +
+  xlab(NULL) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+p5
+
+p6<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Redox10)) +
+  geom_boxplot(fill="grey") 
+p6
+
+
+library(patchwork)
+p1/p2/p3/p4/p5/p6
+
+```
+
