@@ -140,6 +140,7 @@ print(envdat2026)
 ```
 
 ## Explore the correlations among the environmental factors in a panel pairs plot
+
 A pairs panel plot is a good way to inspect the correlations among the environmental factors. The diagonal shows the distribution of each variable, the lower triangle shows scatterplots of each pair of variables, and the upper triangle shows the correlation coefficients. Note that the units of the different environmental variables are very different, so it is important to use a correlation coefficient that is not sensitive to differences in scale, such as Spearman's rank correlation coefficient. This plot also helps you to identify collinearity among the environmental variables, which can be a problem in multivariate analyses. If two variables are highly correlated, you may want to remove one of them from the analysis. Also it helps you detect clear outliers, which may represent data entry mistakes or extreme values that may influence the results of the analysis. In that case, you may want to remove those outliers from the analysis.
 
 ```{r}
@@ -149,8 +150,9 @@ psych::pairs.panels(envdat2026,smooth=F,ci=T,ellipses=F,stars=T,method="pearson"
 ```
 
 ## Ordination: run a Principal Component Analysis (PCA) on the environmental data
-We start with a PCA on the environmental data, to reduce the dimensionality of the environmental data and to identify the main environmental gradients our study design. The PCA is a linear ordination method, which assumes that the environmental factors  respond linearly to the environmental gradients. 
-It is important to use .scale=T as a parameter of the PCA. The PCA is then based on the correlation matrix of the environmental variables, which means that the variables are standardized to have a mean of zero and a standard deviation of one. This is important because environmental variables are typically measured in different units and have widely different ranges. The PCA will produce a set of orthogonal axes (principal components) that explain the maximum amount of variation in the data. The first principal component (PC1) explains the most variation, followed by PC2, PC3, etc. You can see these as main environmental gradients represented by multiple environmental variables. We then visualize the PCA results with a biplot, which shows the scores of the sites (plots) and the loadings (scores) of the environmentalvariables on the first two principal components. The loadings indicate how much each variable contributes to each principal component. The biplot can help you identify which environmental variables are most important in explaining the variation in the data, which ones are highly correlated and how the sites (plots) are distributed along the main environmental gradients.
+
+We start with a PCA on the environmental data, to reduce the dimensionality of the environmental data and to identify the main environmental gradients our study design. The PCA is a linear ordination method, which assumes that the environmental factors respond linearly to the environmental gradients. It is important to use .scale=T as a parameter of the PCA. The PCA is then based on the correlation matrix of the environmental variables, which means that the variables are standardized to have a mean of zero and a standard deviation of one. This is important because environmental variables are typically measured in different units and have widely different ranges. The PCA will produce a set of orthogonal axes (principal components) that explain the maximum amount of variation in the data. The first principal component (PC1) explains the most variation, followed by PC2, PC3, etc. You can see these as main environmental gradients represented by multiple environmental variables. We then visualize the PCA results with a biplot, which shows the scores of the sites (plots) and the loadings (scores) of the environmentalvariables on the first two principal components. The loadings indicate how much each variable contributes to each principal component. The biplot can help you identify which environmental variables are most important in explaining the variation in the data, which ones are highly correlated and how the sites (plots) are distributed along the main environmental gradients.
+
 ```{r}
 
 # do a principal component analysis (pca) 
@@ -184,8 +186,9 @@ ggvegan::autoplot(
 
 The plot show that the first principal component (PC1) explains 64% of the variation in the environmental data, and the second principal component (PC2) explains 16% of the variation. The arrows represent the loadings of the environmental variables on the principal components. All variables are about equal in terms of their contribution to the principal components. The length and direction of the arrows indicate the strength and direction of the relationship between each variable and the principal components. Not that several variables are strongly correlated, we may want to remove some of them from the analysis, to avoid collinearity problems in the subsequent analyses. For example, Redox5 and Redox10 are highly correlated, as are Elevation_m and TransProb. We will remove Redox10 and Elevation from the subsequent analyses. (see codeblock prior to pca)
 
-## Ordination: DCA 
-A PCA is typically used for environmental data, which are typically continuous variables with often more or less linear relations. For species composition data, which are typically count data or presence-absence data, a unimodal ordination method such as DCA (Detrended Correspondence Analysis) is more appropriate. Unimodal relations of species with environmental gradients are expected from niche theory. DCA is a non-linear ordination method that assumes that species have unimodal responses to environmental gradients.  The DCA can help you identify patterns in species composition and how they relate to environmental gradients. It is an indirect gradient analysis, which means that it does not use environmental variables to constrain the ordination, but rather uses the species composition data to identify the main gradients in the data. The DCA produces a set of orthogonal axes that explain the maximum amount of variation in the species composition data. The first axis (DCA1) explains the most variation, followed by DCA2, DCA3, etc. You can see these as main environmental gradients represented by multiple species. We then visualize the DCA results with a biplot, which shows the scores of the sites (plots) and the scores of the species on the first two DCA axes. The scores indicate how much each site or species contributes to each DCA axis. The biplot can help you identify which sites or species are most important in explaining the variation in the data, which ones are highly correlated and how the sites (plots) are distributed along the main environmental gradients, as inferred from the species composition data. 
+## Ordination: DCA
+
+A PCA is typically used for environmental data, which are typically continuous variables with often more or less linear relations. For species composition data, which are typically count data or presence-absence data, a unimodal ordination method such as DCA (Detrended Correspondence Analysis) is more appropriate. Unimodal relations of species with environmental gradients are expected from niche theory. DCA is a non-linear ordination method that assumes that species have unimodal responses to environmental gradients. The DCA can help you identify patterns in species composition and how they relate to environmental gradients. It is an indirect gradient analysis, which means that it does not use environmental variables to constrain the ordination, but rather uses the species composition data to identify the main gradients in the data. The DCA produces a set of orthogonal axes that explain the maximum amount of variation in the species composition data. The first axis (DCA1) explains the most variation, followed by DCA2, DCA3, etc. You can see these as main environmental gradients represented by multiple species. We then visualize the DCA results with a biplot, which shows the scores of the sites (plots) and the scores of the species on the first two DCA axes. The scores indicate how much each site or species contributes to each DCA axis. The biplot can help you identify which sites or species are most important in explaining the variation in the data, which ones are highly correlated and how the sites (plots) are distributed along the main environmental gradients, as inferred from the species composition data.
 
 ```{r}
 # Keep the vegetation and environmental data aligned after removing incomplete sites.
@@ -199,7 +202,7 @@ dca<-vegan::decorana(vegdat2026sel)
 dca
 ```
 
-A rule of thumb is that when this length is <3, you can use a PCA or RDA. When the length is >4, you should use a unimodal method such as DCA or CCA. In this case, the length of the first axis is about 8 standard deviations of species responses, which indicates that the species composition data have a strong unimodal response to environmental gradients. Therefore, we will continue with  DCA for the ordination of the species composition data. Not that in a DCA plot we do not use arrows for the species, as their score does not represent a linear gradient. Instead, the score of a species now represents their ecological optimum. Species that are close to each other in the DCA plot co-occur under the same environmental conditions, and species that are far apart have different ecological optima. The same applies to the sites (plots). Sites that are close to each other in the DCA plot have similar species composition, and sites that are far apart have different species composition. The DCA plot can help you identify patterns in species composition and how they relate to environmental gradients, as inferred from the species composition data.
+A rule of thumb is that when this length is \<3, you can use a PCA or RDA. When the length is \>4, you should use a unimodal method such as DCA or CCA. In this case, the length of the first axis is about 8 standard deviations of species responses, which indicates that the species composition data have a strong unimodal response to environmental gradients. Therefore, we will continue with DCA for the ordination of the species composition data. Not that in a DCA plot we do not use arrows for the species, as their score does not represent a linear gradient. Instead, the score of a species now represents their ecological optimum. Species that are close to each other in the DCA plot co-occur under the same environmental conditions, and species that are far apart have different ecological optima. The same applies to the sites (plots). Sites that are close to each other in the DCA plot have similar species composition, and sites that are far apart have different species composition. The DCA plot can help you identify patterns in species composition and how they relate to environmental gradients, as inferred from the species composition data.
 
 ```{r}
 # plot the dca ordination with site codes as labels using ggvegan::autoplot
@@ -216,8 +219,7 @@ ggvegan::autoplot(
 
 ```
 
-
-## Fit  environmental factors to the dca ordination surface
+## Fit environmental factors to the dca ordination surface
 
 ```{r}
 names(envdat2026sel)
@@ -245,12 +247,13 @@ vegan::ordisurf(dca, envdat2026sel$conductivity, add = TRUE, col = "blue")
 
 # make the plot again with contours of abundance of Plantago maritima
 vegan::ordiplot(dca,display="sites",cex=0.7,type="text",xlim=c(-3,3),ylim=c(-1,1))
-vegan::ordisurf(dca,vegdat2026$PlantMar,add=T,col="darkgreen")
+vegan::ordisurf(dca,vegdat2026sel$PlantMar,add=T,col="darkgreen")
 
 ```
 
 ## CCA: constrained ordination of species composition by environmental variables
-A CCA is a good method if and which environmental factors jointly explain the variation in species composition among the sites. The CCA is a constrained ordination method, which means that it uses environmental variables to constrain the ordination. This means that the possible site scores on the axis are a multiple regression of the environmental predictors.  You can see these as main environmental gradients (but only of the factors you measured) affecting multiple species. A CCA is especially good for (multivariate) hypothesis testing, as it allows you to test the significance of the environmental variables in explaining the variation in species composition. 
+
+A CCA is a good method if and which environmental factors jointly explain the variation in species composition among the sites. The CCA is a constrained ordination method, which means that it uses environmental variables to constrain the ordination. This means that the possible site scores on the axis are a multiple regression of the environmental predictors. You can see these as main environmental gradients (but only of the factors you measured) affecting multiple species. A CCA is especially good for (multivariate) hypothesis testing, as it allows you to test the significance of the environmental variables in explaining the variation in species composition.
 
 ```{r}
 names(envdat2026sel)
@@ -437,6 +440,7 @@ p1/p2/p3/p4/p5/p6
 ```
 
 ## Ordination: calculate and plot a Non-metric Multidimensional Scaling (NMDS) ordination
+
 An NMDS is asking a different question. it is asking how similar the species composition of the different plots is, and how this similarity is related to the environmental variables. The NMDS is a non-linear ordination method, which does not assume a linear relationship between the species composition and the environmental variables. The NMDS is based on a distance matrix, which quantifies the dissimilarity in species composition between each pair of plots. The NMDS then tries to represent these dissimilarities in a low-dimensional space (usually 2D or 3D) while preserving the rank order of the dissimilarities as much as possible. The NMDS is particularly useful for ecological data, which often have non-linear relationships and complex interactions between species and environmental variables. The NMDS can help you identify patterns in species composition and how they relate to environmental gradients.
 
 ```{r}
