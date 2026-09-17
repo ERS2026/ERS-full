@@ -356,7 +356,7 @@ The PCA, DCA, and CCA are all ordination methods thatassume that the species abu
 
 ```{r}
 # calculate the distance matrix using Bray-Curtis dissimilarity
-dist_mat <- vegan::vegdist(vegdat2026sel, method = "hellinger")
+dist_mat <- vegan::vegdist(vegdat2026sel, method = "bray")
 # calculate the PCoA using this distance matrix
 pcoa_res <- vegan::wcmdscale(dist_mat, k = 2, eig = TRUE, add = "lingoes")
 
