@@ -149,7 +149,7 @@ psych::pairs.panels(envdat2026,smooth=F,ci=T,ellipses=F,stars=T,method="pearson"
 
 ```
 
-## Ordination: run a Principal Component Analysis (PCA) on the environmental data
+# Ordination: run a Principal Component Analysis (PCA) on the environmental data
 
 We start with a PCA on the environmental data, to reduce the dimensionality of the environmental data and to identify the main environmental gradients our study design. The PCA is a linear ordination method, which assumes that the environmental factors respond linearly to the environmental gradients. It is important to use .scale=T as a parameter of the PCA. The PCA is then based on the correlation matrix of the environmental variables, which means that the variables are standardized to have a mean of zero and a standard deviation of one. This is important because environmental variables are typically measured in different units and have widely different ranges. The PCA will produce a set of orthogonal axes (principal components) that explain the maximum amount of variation in the data. The first principal component (PC1) explains the most variation, followed by PC2, PC3, etc. You can see these as main environmental gradients represented by multiple environmental variables. We then visualize the PCA results with a biplot, which shows the scores of the sites (plots) and the loadings (scores) of the environmentalvariables on the first two principal components. The loadings indicate how much each variable contributes to each principal component. The biplot can help you identify which environmental variables are most important in explaining the variation in the data, which ones are highly correlated and how the sites (plots) are distributed along the main environmental gradients.
 
@@ -186,7 +186,7 @@ ggvegan::autoplot(
 
 The plot show that the first principal component (PC1) explains 64% of the variation in the environmental data, and the second principal component (PC2) explains 16% of the variation. The arrows represent the loadings of the environmental variables on the principal components. All variables are about equal in terms of their contribution to the principal components. The length and direction of the arrows indicate the strength and direction of the relationship between each variable and the principal components. Not that several variables are strongly correlated, we may want to remove some of them from the analysis, to avoid collinearity problems in the subsequent analyses. For example, Redox5 and Redox10 are highly correlated, as are Elevation_m and TransProb. We will remove Redox10 and Elevation from the subsequent analyses. (see codeblock prior to pca)
 
-## Ordination: DCA
+# Ordination: DCA
 
 A PCA is typically used for environmental data, which are typically continuous variables with often more or less linear relations. For species composition data, which are typically count data or presence-absence data, a unimodal ordination method such as DCA (Detrended Correspondence Analysis) is more appropriate. Unimodal relations of species with environmental gradients are expected from niche theory. DCA is a non-linear ordination method that assumes that species have unimodal responses to environmental gradients. The DCA can help you identify patterns in species composition and how they relate to environmental gradients. It is an indirect gradient analysis, which means that it does not use environmental variables to constrain the ordination, but rather uses the species composition data to identify the main gradients in the data. The DCA produces a set of orthogonal axes that explain the maximum amount of variation in the species composition data. The first axis (DCA1) explains the most variation, followed by DCA2, DCA3, etc. You can see these as main environmental gradients represented by multiple species. We then visualize the DCA results with a biplot, which shows the scores of the sites (plots) and the scores of the species on the first two DCA axes. The scores indicate how much each site or species contributes to each DCA axis. The biplot can help you identify which sites or species are most important in explaining the variation in the data, which ones are highly correlated and how the sites (plots) are distributed along the main environmental gradients, as inferred from the species composition data.
 
@@ -251,7 +251,7 @@ vegan::ordisurf(dca,vegdat2026sel$PlantMar,add=T,col="darkgreen")
 
 ```
 
-## CCA: constrained ordination of species composition by environmental variables
+# CCA: constrained ordination of species composition by environmental variables
 
 A CCA is a good method if and which environmental factors jointly explain the variation in species composition among the sites. The CCA is a constrained ordination method, which means that it uses environmental variables to constrain the ordination. This means that the possible site scores on the axis are a multiple regression of the environmental predictors. You can see these as main environmental gradients (but only of the factors you measured) affecting multiple species. A CCA is especially good for (multivariate) hypothesis testing, as it allows you to test the significance of the environmental variables in explaining the variation in species composition.
 
@@ -275,31 +275,139 @@ anova(cca,by="term", permutations=999)
 
 ```
 
-## Do a principal coordinate analysis PCoA
+# Principal coordinate analysis PCoA
+PCoA is a non-linear ordination method that can be used to visualize the dissimilarity in species composition between sites/samples. It's input is a distance matrix, which quantifies the dissimilarity in species composition between each pair of sites. You can choose different metrics to calculate the dissimilarity, such as Bray-Curtis dissimilarity, Jaccard dissimilarity, or Euclidean distance. The choice of metric depends on the type of data and the research question. For example, Bray-Curtis dissimilarity is often used for species composition data, as it takes into account both the presence/absence and abundance of species.
+Despite the high dimensionality of the species composition data, the PCoA can help you visualize the dissimilarities in a low-dimensional space (usually 2D or 3D). The PCoA can help you identify patterns in species composition and how they relate to environmental gradients, as inferred from the species composition data.
+The PCoA can help you identify patterns in species composition and how they relate to environmental factors, as inferred from the species composition data. The difference with a DCA is that a DCA is a unimodal ordination method, which assumes that species have unimodal responses to environmental gradients, while a PCoA is a non-linear ordination method that does not make any assumptions about the shape of the response of species to environmental gradients. The PCoA can be used to visualize the dissimilarity in species composition between sites/samples, while the DCA can be used to identify the main gradients in species composition and how they relate to environmental gradients. A PCoA is especially useful for visualizing the dissimilarity in species composition between experimental treatments in field experiments, or between categories of land use, where you are less interested in overall gradients. 
 
 ```{r}
-dist_mat <- vegdist(vegdat2026sel, method = "bray")
-pcoa_res <- ape::pcoa(dist_mat)
-# extract the coordinates
-scores <- as.data.frame(pcoa_res$vectors[,1:2])
-names(scores) <- c("PCoA1","PCoA2")
-scores$Plot_ID <- rownames(scores)   # rownames represent plot numbers in this case
-scores
-# calculate variance explained
-var_exp <- round(pcoa_res$values$Relative_eig[1:2] * 100, 1)
-# plot the ordination
-# species "scores" as weighted averages of site scores (not that this is an approximation, not as in DCA or CCA)
-sp <- vegan::wascores(scores[, c("PCoA1","PCoA2")], vegdat2026)
-sp <- as.data.frame(sp)
-sp$Species <- rownames(sp)
+
+# compute a Bray–Curtis dissimilarity matrix between all pairs of sites based on the species composition data
+vegdist_bray <- vegan::vegdist(vegdat2026sel, method = "bray")
+vegdist_bray
+
+# Run PCoA, where you specify how many ordination axes you want to retain (k = 2 for 2D ordination). The add = TRUE argument adds a small constant to the distance matrix to avoid negative eigenvalues, which can occur when the distance matrix is not Euclidean. The eig = TRUE argument returns the eigenvalues of the distance matrix, which can be used to calculate the proportion of variance explained by each axis.
+PCoA<-vegan::wcmdscale(vegdist_bray, k = 2, eig = TRUE, add = TRUE)
+
+# plot the result: sites that are closer together in ordination space are more similar in species composition, while sites that are further apart are more dissimilar in species composition. The axes represent the main gradients in species composition, as inferred from the dissimilarity matrix.
+plot(PCoA)
+
+# A fitted PCOA object does not contain species scores, as it is only based on the dissimilarity matrix of sites (how similar each pair of sites is across al species). But because we know the species composition of each site, we can approximate the species scores as weighted averages of the site scores. This is done with the vegan::wascores() function, which calculates the weighted average of the site scores for each species, where the weights are the relative abundances of each species in each site. The resulting species scores can then be plotted in the same ordination space as the site scores, to visualize how the species are distributed along the main gradients in species composition.
+plot(PCoA,cex=1.5)
+species_scores <- wascores(
+  scores(PCoA, choices = 1:2),
+  vegdat2026sel
+)
+text(species_scores, labels = colnames(vegdat2026sel), cex = 1, col = "red")
+
+# calculate the PCOA
+vegdist_bray <- vegan::vegdist(vegdat2026sel, method = "bray")
+PCoA<-vegan::wcmdscale(vegdist_bray, k = 2, eig = TRUE, add = TRUE)
+
+# extract scores for sites and species for plotting
+# Site scores
+sites <- as.data.frame(scores(PCoA, choices = 1:2))
+sites$site <- rownames(sites)
+
+# Species scores (averages of site scores weighted by species abundance)
+species <- as.data.frame(
+  wascores(
+    scores(PCoA, choices = 1:2),
+    vegdat2026sel
+  )
+)
+species$species <- rownames(species)
+
+# Make the plot
 ggplot() +
-  geom_point(data = scores, aes(PCoA1, PCoA2), size = 2) +
-  geom_text_repel(data = scores, aes(PCoA1, PCoA2, label = Plot_ID), size = 3) +
-  geom_point(data = sp, aes(PCoA1, PCoA2), shape = 3) +
-  ggrepel::geom_text_repel(data = sp, aes(PCoA1, PCoA2, label = Species), size = 3) +
-  xlab(paste0("PCoA1 (", var_exp[1], "%)")) +
-  ylab(paste0("PCoA2 (", var_exp[2], "%)")) +
-  theme_classic()
+  geom_text_repel(
+    data = sites, col="blue", size=4,
+    aes(x = Dim1, y = Dim2, label = site)
+  ) +
+  geom_text_repel(
+    data = species, col="red",
+    aes(x = Dim1, y = Dim2, label = species)
+  ) +
+  labs(x="PCoA1", y="PCoA2") +
+  coord_equal() +
+  theme_classic(base_size = 14) 
+
+
+
+
+
+# Extract site coordinates and variance explained.
+scores <- as.data.frame(vegan::scores(PCoA, display = "sites")[, 1:2])
+names(scores) <- c("PCoA1", "PCoA2")
+scores$Plot_ID <- rownames(scores)
+var_exp <- round(PCoA$eig[1:2] / sum(PCoA$eig[PCoA$eig > 0]) * 100, 1)
+
+# Approximate species scores as weighted averages of site scores.
+sp <- vegan::wascores(scores[, c("PCoA1", "PCoA2")], vegdat2026sel)
+sp <- as.data.frame(sp)
+names(sp) <- c("PCoA1", "PCoA2")
+sp$Species <- rownames(sp)
+
+# Fit environmental vectors to the PCoA site scores.
+ef_pcoa <- vegan::envfit(
+  PCoA,
+  envdat2026sel[, c(
+    "Dist2Gully_m", "TransProb", "Clay_cm",
+    "Redox5", "perc_water", "conductivity"
+  )],
+  permutations = 999
+)
+
+# Scale vectors for display; arrow lengths are graphical, not effect sizes.
+arrows <- as.data.frame(vegan::scores(ef_pcoa, display = "vectors"))
+arrows$Variable <- rownames(arrows)
+arrows <- arrows |>
+  dplyr::mutate(
+    PCoA1 = PCoA1 * 0.8 / max(abs(PCoA1)),
+    PCoA2 = PCoA2 * 0.8 / max(abs(PCoA2))
+  )
+
+# PCoA biplot with sites, approximate species scores, and environmental vectors.
+ggplot2::ggplot() +
+  ggplot2::geom_point(
+    data = scores,
+    ggplot2::aes(PCoA1, PCoA2),
+    size = 2
+  ) +
+  ggrepel::geom_text_repel(
+    data = scores,
+    ggplot2::aes(PCoA1, PCoA2, label = Plot_ID),
+    size = 3
+  ) +
+  ggplot2::geom_point(
+    data = sp,
+    ggplot2::aes(PCoA1, PCoA2),
+    shape = 3
+  ) +
+  ggrepel::geom_text_repel(
+    data = sp,
+    ggplot2::aes(PCoA1, PCoA2, label = Species),
+    size = 3,
+    color = "grey30"
+  ) +
+  ggplot2::geom_segment(
+    data = arrows,
+    ggplot2::aes(x = 0, y = 0, xend = PCoA1, yend = PCoA2),
+    arrow = grid::arrow(length = grid::unit(0.15, "cm")),
+    color = "red"
+  ) +
+  ggrepel::geom_text_repel(
+    data = arrows,
+    ggplot2::aes(PCoA1, PCoA2, label = Variable),
+    color = "red"
+  ) +
+  ggplot2::labs(
+    title = "PCoA biplot of species composition",
+    x = paste0("PCoA1 (", var_exp[1], "%)"),
+    y = paste0("PCoA2 (", var_exp[2], "%)")
+  ) +
+  ggplot2::theme_classic() +
+  ggplot2::theme(aspect.ratio = 1)
 
 # repeat with a different dissimilarity measure, e.g. Hellinger
 # 1. Hellinger transform
