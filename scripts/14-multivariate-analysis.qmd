@@ -362,14 +362,15 @@ dist_mat <- vegan::vegdist(vegdat2026sel, method = "hellinger")
 # calculate the PCoA using this distance matrix
 pcoa_res <- vegan::wcmdscale(dist_mat, k = 2, eig = TRUE, add = "lingoes")
 
-# Extract site coordinates and variance explained.
+# Extract site coordinates and variance explained for plotting
 sites <- as.data.frame(pcoa_res$points)
 names(sites) <- c("PCoA1", "PCoA2")
 sites$site <- rownames(sites)
 var_exp <- round(pcoa_res$eig / sum(pcoa_res$eig) * 100, 1)[1:2]
 sites
 
-# Approximate species scores as weighted averages of site scores.
+# a PCoA is only 'fed' with a dissimilarity matrix of sites. So the ordination result does not contain species scores. 
+#  species scores can be approximated as weighted averages of site scores.
 species <- as.data.frame(
   vegan::wascores(
     sites[, c("PCoA1", "PCoA2")],
@@ -386,13 +387,9 @@ spfit <- vegan::envfit(
   envdat2026sel,
   permutations = 999
 )
-spfit
-
 environmentalfactors <- as.data.frame(
   vegan::scores(spfit, display = "vectors")
 )
-environmentalfactors
-
 environmentalfactors$environmentalfactor <- rownames(environmentalfactors)
 
 
@@ -448,17 +445,12 @@ ggplot2::ggplot() +
 
 # Ordination: NMDS
 An NMDS (non-metric multidimensional scaling) can be seen as a 'non-parametric' PCoA. Similar to a PcOA it orders sites in an ordination space where more similar sites are put closer together. But in contrast with PCOA, it does not use the actual dissimilarity but just the rank-order differences.  It is typicallyless informative than a DCA; as it visually overestimates often the importance of the second axis, and it does not provide information on the ecological optima of the species, the importance of axes, and of gradient lengths. All ordination axes are scaled to the same length, which is not the case in DCA. Therefore, we will prefer DCA for the ordination of the species composition data, and NMDS only as a complementary method to visualize the dissimilarity in species composition between plots.
+vegan::metaNMDS() transforms the species abundances by default by the double Wisconsin-square root transformation. The square-root transformation reduces the influence of very abundant species. The Wisconsin standardization then gives species more comparable weight and removes differences in overall abundance among sites. This gives species with very different maximum abundances more equal influence. 
+
 
 ```{r}
-# filter the vegetation data for those plots that are retained in envdat2026 dataset
-
-# calculate the dissimilarity matrix (Bray-Curtis is typically used)
-distbray<-vegan::vegdist(vegdat2026,method="bray") # Bray-Curtis dissimilarity
-distbray
-
-
 # non-metric multidimension scaling / indirect gradient analysis (only species composition)
-nmds_veg<-metaMDS(vegdat2026,k=2,trace=F,trymax=1000,distance="bray")
+nmds_veg<-vegan::metaMDS(vegdat2026sel,k=2,trace=F,trymax=1000,distance="bray", autotransform = TRUE)
 nmds_veg
 vegan::ordiplot(nmds_veg,type="t")
 # and show the ordination with the most abundance species with priority
@@ -467,26 +459,91 @@ vegan::ordiplot(nmds_veg,display="sites",cex=1,type="t")
 vegan::orditorp(nmds_veg,dis="sp",priority = SpecTotCov,
                 col="red",pcol = "red",pch="+",cex=1.1)
 
+# extract the species and site score
+# extract species, sites and env factor scores from the ordination result
+species <- data.frame(vegan::scores(nmds_veg, display="species", choices = 1:2))
+species$species <- rownames(species)
+sites <- data.frame(vegan::scores(nmds_veg, display="sites", choices = 1:2))
+sites$site <- rownames(sites)
+sites
+
+# Fit the environmental factors to the nmds scores
+environfit <- vegan::envfit(
+  sites[, c("NMDS1", "NMDS2")],
+  envdat2026sel,
+  permutations = 999
+)
+environmentalfactors <- as.data.frame(
+  vegan::scores(environfit, display = "vectors")
+)
+environmentalfactors$environmentalfactor <- rownames(environmentalfactors)
+
+# Make the NMDS biplot.
+ggplot2::ggplot() +
+    ggplot2::geom_segment(
+    data = environmentalfactors,
+    ggplot2::aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+    arrow = grid::arrow(length = grid::unit(0.15, "cm")),
+    color = "darkgreen"
+  ) +
+  ggrepel::geom_text_repel(
+    data = environmentalfactors,
+    ggplot2::aes(NMDS1, NMDS2, label = environmentalfactor),
+    color = "darkgreen",
+    size = 4
+  ) +
+  ggplot2::geom_point(
+    data = sites,
+    ggplot2::aes(NMDS1, NMDS2),
+    color = "blue",
+    size = 2
+  ) +
+  ggrepel::geom_text_repel(
+    data = sites,
+    ggplot2::aes(NMDS1, NMDS2, label = site),
+    color = "blue",
+    size = 4
+  ) +
+  ggplot2::geom_point(
+    data = species,
+    ggplot2::aes(NMDS1, NMDS2),
+    shape = 3,
+    color = "red"
+  ) +
+  ggrepel::geom_text_repel(
+    data = species,
+    ggplot2::aes(NMDS1, NMDS2, label = species),
+    color = "red",
+    size = 4
+  ) +
+  ggplot2::labs(
+    x = "NMDS1",
+    y = "NMDS2"
+  ) +
+  ggplot2::coord_equal() +
+  ggplot2::theme_classic(base_size = 12) +
+  ggplot2::theme(aspect.ratio = 1)
+
+
 ```
 
 
 # Cluster analysis (classification) of communities
-
+In cluster analysis, we  classify sites into groups with similar species composition. In vegetation ecology, such group of sites or plots that have similar species composition are called **vegetation types**. This is a form of classification, which is different from ordination, which is a form of gradient analysis (rank sites and species into multiple dimensions base on their similarity). In cluster analysis, we first use a dissimilarity matrix to quantify the differences in species composition between each pair of sites. We then use a clustering algorithm to group the sites into clusters based on their dissimilarity. The result is a dendrogram, which shows the hierarchical relationships among the sites and the clusters. It shows how at different levels of similarity multiple sites are grouped together and at which level they split into subtypes. We can then cut the dendrogram at a certain level of dissimilarity to define the clusters, which then represent different communities with similar species composition. We can then use indicator species analysis to identify which species are characteristic of each cluster of site (so for each vegetation type).
 ```{r}
-# first calculate a dissimilarity matrix, using Bray-Curtis dissimilarity
-d<-vegan::vegdist(vegdat2026,method="bray")
+# first calculate a dissimilarity matrix, in this case we choose the  Bray-Curtis dissimilarity
+d<-vegan::vegdist(vegdat2026sel,method="bray")
+# show the dissimilarity matrix (1= completely different, 0= exactly the same)
 d
 
-# show the dissimilarity matrix (1= completely different, 0= exactly the same)
-
-# now cluster the sites based on similarity in species composition 
-# using average linkage as the sorting algorithm
+# now cluster the sites based on similarity in species composition using "average linkage" method as the sorting algorithm; the rule we  use to decide how far apart two clusters are. Other methods can are also possible. 
 cavg<-hclust(d,method="average")
+
+# show the dendrogram 
 plot(cavg)
-
-
-# show the dendrogram and cut it in 5 communities
+# cut it into 5 communities (clusters) and show the clusters in the dendrogram
 rect.hclust(cavg,5)
+# store the cluster membership of each site in a new variable
 clust<-cutree(cavg,5)
 clust<-factor(clust)
 clust
@@ -494,7 +551,7 @@ clust
 # do indicator species analysis - which species characterize each cluster? 
 library(indicspecies)
 set.seed(123) # for reproducibility
-indval <- multipatt(vegdat2026, clust, 
+indval <- indicspecies::multipatt(vegdat2026sel, clust, 
                     func = "IndVal.g", duleg = F, 
                     control = how(nperm = 999))
 summary(indval,indivalcomp=TRUE)
@@ -508,59 +565,48 @@ vegan::orditorp(dca,dis="sp", priority=SpecTotCov,
                 col="red",pcol="red",pch="+",cex=0.8,xlim=c(-5,5))
 vegan::ordihull(dca,clust,lty=1,col="blue",lwd=2)
 
-
-
-#add the vegetation type to the environmental data
-envdat2026_2<-envdat2026 |>
+# add the vegetation type to the environmental data
+envdat2026_2<-envdat2026sel |>
   dplyr::mutate(vegtype=clust)
 envdat2026_2 |> as_tibble()
 
 
 # name the different communities that you identified
-levels(envdat2$vegtype)<-c("Dune","High saltmarsh", 
+levels(envdat2026_2$vegtype)<-c("Dune","High saltmarsh", 
                            "Mid Saltmarsh", "Low saltmarsh", "Pioneer")
 
 
 # show boxplot of elevation differences between vegetation types
-p1<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Elevation_m)) +
+names(envdat2026_2)
+p1<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Dist2Gully_m)) +
   geom_boxplot(fill="brown") +
-  xlab(NULL) +
-  theme(axis.text.x=element_blank(),
-        axis.ticks = element_blank())
+  xlab(NULL) 
 p1
 
 # show boxplot of flooding probability differences between vegetation types
 p2<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=TransProb)) +
   geom_boxplot(fill="blue") +
-  xlab(NULL) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
+  xlab(NULL) 
 p2
 
 # show boxplot of clay thickness differences between vegetation types
 p3<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Clay_cm)) +
   geom_boxplot(fill="green") +
-  xlab(NULL) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
+  xlab(NULL) 
 p3
 
-# show boxplot of distance to gully  between vegetation types
-p4<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Dist2Gully_m)) +
+# show boxplot of redox at 5 cm between vegetation types
+p4<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Redox5)) +
   geom_boxplot(fill="orange") +
-  xlab(NULL) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
+  xlab(NULL) 
 p4
 
-p5<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Redox5)) +
+p5<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=perc_water)) +
   geom_boxplot(fill="purple") +
-  xlab(NULL) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
+  xlab(NULL) 
 p5
 
-p6<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=Redox10)) +
+p6<-envdat2026_2 %>% ggplot(aes(x=vegtype,y=conductivity)) +
   geom_boxplot(fill="grey") 
 p6
 
