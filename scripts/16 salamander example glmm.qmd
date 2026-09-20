@@ -11,7 +11,6 @@ execute:
   message: false
 ---
 
-
 # Setup
 
 ```{r}
@@ -23,12 +22,25 @@ library(glmmTMB)
 library(patchwork)
 ```
 
-
-
+The example study contains repeated counts of salamanders in mountain stream. The authors sampled 23 stream sites, each repeatedly sampled four times. Some sites were affected by mountaintop-removal coal mining, so a central question is how salamander abundance differs between mined and unmined streams.
 
 # Data structure
 
-The `Salamanders` data contain repeated samples from sites. The same site can therefore contribute multiple observations, and samples are nested within sites. The data also include whether a site was mined and a measure of vegetation cover.
+The `Salamanders` data contain repeated samples from sites. The same site can therefore contribute multiple observations, and samples are nested within sites. The data also include whether a site was mined and a measure of vegetation cover. The repeated sampling is done not to assess temporal trends, but just because a single sampling round always has a risk to miss particular species. Repeated samples give a more complete view of each site.
+
+Important variables:
+
+| Variable | Meaning                                                          |
+|------------------------------------|------------------------------------|
+| `count`  | Number of salamanders observed                                   |
+| `spp`    | Salamander species or life-stage category                        |
+| `site`   | Sampling site                                                    |
+| `mined`  | Whether the site was affected by mountaintop-removal coal mining |
+| `cover`  | Amount of cover objects in the stream, scaled                    |
+| `sample` | Repeated sampling occasion                                       |
+| `DOP`    | Days since precipitation, scaled                                 |
+| `Wtemp`  | Water temperature, scaled                                        |
+| `DOY`    | Day of year, scaled                                              |
 
 ```{r}
 #| label: load-salamanders-data
@@ -80,13 +92,13 @@ The first Poisson model estimates the association between vegetation cover and s
 ```{r}
 #| label: fit-cover-model
 
-m4 <- glmmTMB::glmmTMB(
+m1 <- glmmTMB::glmmTMB(
   count ~ cover,
   family = poisson(link = "log"),
   data = dat
 )
 
-summary(m4)
+summary(m1)
 ```
 
 ## Add mining status
@@ -96,34 +108,37 @@ The second model adds mining status as a fixed effect.
 ```{r}
 #| label: fit-cover-mining-model
 
-m5 <- glmmTMB::glmmTMB(
+m2 <- glmmTMB::glmmTMB(
   count ~ cover + mined,
   family = poisson(link = "log"),
   data = dat
 )
 
-summary(m5)
-car::Anova(m5)
+summary(m2)
+car::Anova(m2)
+anova(m1,m2)
+AIC(m1,m2)
+AIC(m1)-AIC(m2)
 ```
 
 # Add site-level dependence
 
 ## Random intercept for site
 
-Because multiple samples were collected from the same site, observations from one site may be more similar than observations from different sites. A random site intercept accounts for this dependence by allowing each site to have its own baseline count.
+Because multiple samples were collected from the same site, observations from one site may be more similar than observations from different sites; the observations are grouped by site. The sites may be different for various reasons other than the predictors in the model. A random site intercept accounts for this dependence by allowing each site to have its own baseline count.
 
 ```{r}
 #| label: fit-site-random-intercept
 
-m6 <- glmmTMB::glmmTMB(
+m3 <- glmmTMB::glmmTMB(
   count ~ cover + mined + (1 | site),
   family = poisson(link = "log"),
   data = dat
 )
 
-summary(m6)
-car::Anova(m6)
-AIC(m5, m6)
+summary(m3)
+car::Anova(m3)
+AIC(m2, m3)
 ```
 
 ## Add the nested sample effect
@@ -145,15 +160,16 @@ The expanded form makes the two sources of variation explicit: variation among s
 ```{r}
 #| label: fit-nested-random-effects-model
 
-m7 <- glmmTMB::glmmTMB(
+m4 <- glmmTMB::glmmTMB(
   count ~ cover + mined + (1 | site) + (1 | site:sample),
   family = poisson(link = "log"),
   data = dat
 )
 
-summary(m7)
-car::Anova(m7)
-AIC(m6, m7)
+summary(m4)
+car::Anova(m4)
+AIC(m3, m4)
+AIC(m3)-AIC(m4)
 ```
 
 The final comparison asks whether adding the nested sample-level random effect improves the model enough to justify the extra complexity. The answer should be based on the model comparison, convergence, variance estimates, and the sampling design—not on AIC alone.
