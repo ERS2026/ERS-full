@@ -166,10 +166,17 @@ m4 <- glmmTMB::glmmTMB(
   data = dat
 )
 
+# check assumptions of the final model as we did with a glm poisson model
+simres_m4 <- DHARMa::simulateResiduals(fittedModel = m4, n = 1000)
+DHARMa::testUniformity(simres_m4)
+DHARMa::testDispersion(simres_m4)
+DHARMa::testZeroInflation(simres_m4)
+
+
 summary(m4)
 car::Anova(m4)
 AIC(m3, m4)
 AIC(m3)-AIC(m4)
 ```
 
-The final comparison asks whether adding the nested sample-level random effect improves the model enough to justify the extra complexity. The answer should be based on the model comparison, convergence, variance estimates, and the sampling design—not on AIC alone.
+The final comparison asks whether adding the nested sample-level random effect improves the model enough to justify the extra complexity. The answer on the best model should be based on the check of the family of the model, model comparison, convergence, variance estimates, checks of assumptions etc and the sampling design—not on AIC alone. Use the similar checks as we did in script 11 for the generalized linear models. 
