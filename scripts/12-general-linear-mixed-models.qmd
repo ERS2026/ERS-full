@@ -72,7 +72,7 @@ warming_data
 
 ## Explore the simulated data
 
-We explore the results, where we jitter the point to avoid plotting points on top of eachother, allowing to see the variation better. And we fit a linear model to the data to visualize the overall trend. This model without the block effect will be our null model for comparison. We fit this directly with glmmTMB instead of lm() to keep the model fitting (maximum likelihood) consistent with the later models that include random effects. So we can statistically compare if more complex models with the random effects are better than the null model. The null model is a fixed-effects model with only the warming treatment as a predictor, and it does not account for block-level variation.
+We explore the results, where we jitter the point to avoid plotting points on top of each other, allowing to see the variation better. And we fit a linear model to the data to visualize the overall trend. This model without the block effect will be our null model for comparison. We fit this directly with glmmTMB instead of lm() to keep the model fitting (maximum likelihood) consistent with the later models that include random effects. So we can statistically compare if more complex models with the random effects are better than the null model. The null model is a fixed-effects model with only the warming treatment as a predictor, and it does not account for block-level variation.
 
 We see a clear positive effect of warming. But we have not accounted yet for the block-level variation, which is what we will do in the next section.
 
@@ -145,10 +145,11 @@ m1 <- glmmTMB::glmmTMB(
 summary(m1)
 anova(m0, m1)
 AIC(m0, m1)
+AIC(m0)-AIC(m1)
 
 ```
 
-The anova test finds that adding random intercepts for blocks significantly improves the model fit, and the delta-AIC (12 lower) is strong support for the random-intercept model compared to the null model without the block effect. So the extra complexity seems justified.
+The anova test finds that adding random intercepts for blocks significantly improves the model fit, and the delta-AIC (101 lower) is strong support for the random-intercept model compared to the null model without the block effect. So the extra complexity seems justified.
 
 ## Plot the predictions of the random intercept model
 
@@ -180,37 +181,40 @@ warming_data |>
   labs(
     x = "Warming treatment (°C enhancement)",
     y = "Biomass (g/m²)",
-    title = "Random-intercept model: common slope, block-specific intercepts"
+    title = "Biomass_gm2 ~ Treatment + (1 | Block)"
   )
 ```
 
-So this is the so-called `random intercept model`. This name is a bit confusing. You see that every block has its own intercept, but the slope is the same for all blocks. So the slope is fixed, and each block as its own intercept. The model estimates one average slope for all blocks, and each block has its own intercept that is a deviation from the overall intercept. So the intercepts are not selected at random, they are the fitted intercepts for each level of the random effect (block).
+This plot shows the so-called `random intercept model`. This name is a bit confusing. You see that every block has its own intercept, but the fitted slope (treatment effect) is the same for all blocks. So the intercepts are not selected at random, they are the fitted intercepts for each level of the random effect (block).
 
 # Random-slope model
 
 A random-slope model allows the warming response to vary among blocks, by fitting a slope for each block in addition to the block-specific intercept. So again the slopes are not random in a 'random-slope model', they are the slopes for each level of the random factor.
 
 $$
-text{Biomass}_{ij} = beta_0 + beta_1text{Treatment}_{ij} + b_{0j} + b_{1j}text{Treatment}_{ij} + epsilon_{ij}.
+\text{Biomass}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + b_{1j}\text{Treatment}_{ij} + \epsilon_{ij}.
 $$
 
-The model below estimates a random intercept and a random treatment slope, while fixing their correlation to zero. The 0 in this notation prevents the model from estimating a correlation between the random intercept and random slope. This is often a good idea when the number of levels of the random effect is small, as in this example with only three blocks, because this covariance is then difficult to measure. A slightly shorter notation for this same model m2 would be `(1 | Block) + (Treatment || Block)`. But this notation is less clear, so we use the more explicit form here. The 1 indicates that the model estimates a random intercept for each block, and the 0 indicates that the model estimates a random slope for each block but does not estimate a correlation between the random intercept and random slope.
+The model below estimates a random intercept and a random treatment slope, while fixing their correlation to zero. The 0 in this notation prevents the model from estimating a correlation between the random intercept and random slope. This is often a good idea when the number of levels of the random effect is small, as in this example with only three blocks, because this covariance is then difficult to measure. A slightly shorter notation for this same model m2 would be ` Treatment + (Treatment || Block)`. But we use the more explicit form here as it is more clear, we just add the term (0 + Treatment | Block) to the previous model. The 1 in (1|block)indicates that the model estimates a random intercept for each block, and the 0 in (0 + Treatment | Block)indicates that the model estimates a random slope for each block but does not estimate a correlation between the random intercept and random slope (they are assumed to be independent, their covariance is fixed to zero). We fit the model again, test it with anova, and compare it with AIC to the previous model. 
 
 ```{r}
 #| label: fit-random-slope-model
 
 m2 <- glmmTMB::glmmTMB(
-  Biomass_gm2 ~ (1 | Block) + (0 + Treatment | Block),
+  Biomass_gm2 ~ Treatment + (1 | Block) + (0 + Treatment | Block),
   family = gaussian(link = "identity"),
   data = warming_data
 )
 
 summary(m2)
-car::Anova(m2)
+anova(m1,m2)
 AIC(m1, m2)
+AIC(m1)-AIC(m2)
+
+
 ```
 
-A (more than lower AIC indicates a better trade-off between fit and model complexity. Differences of only a few AIC units should not be treated as decisive evidence on their own.
+So the model is again significant and there is strong support that the extra complexity is justified by more explained variation (delta-AIC is 136). Plot the model. In such mixed models, always show the fitted model equation when you show the graph and fit, so that the reader can see what is actually fitted. The fitted model equation is shown in the title of the plot below.
 
 ```{r}
 #| label: predict-random-slope-model
@@ -221,7 +225,7 @@ prediction_data$predicted_m2 <- predict(
 )
 
 warming_data |>
-  ggplot(aes(x = Treatment, y = Value)) +
+  ggplot(aes(x = Treatment, y = Biomass_gm2)) +
   geom_jitter(aes(color = Block), width = 0.1) +
   geom_line(
     data = prediction_data,
@@ -231,53 +235,30 @@ warming_data |>
   labs(
     x = "Warming treatment (°C enhancement)",
     y = "Biomass (g/m²)",
-    title = "Random-slope model: block-specific intercepts and slopes"
+    title = "Biomass_gm2 ~ Treatment + (1 | Block) + (0 + Treatment | Block)"
   )
 ```
 
-## Random intercept–slope covariance
+## add a parameter to the model for the covariance between the random intercept and random slope
 
-A more complex model allows the random intercept and random slope to be correlated. This asks whether blocks with higher baseline biomass also tend to have stronger or weaker warming responses.
+An even more complex model allows the random intercept and random slope to be correlated. This asks whether blocks with higher baseline biomass also tend to have stronger or weaker warming responses (as seems to be the case here). With only few levels of the random factor (3 in this case) we not always have enough power to fit this effect. But we will try. 
 
 ```{r}
 #| label: fit-correlated-random-effects-model
 
 m3 <- glmmTMB::glmmTMB(
-  Value ~ Treatment + (1 + Treatment | Block),
+  Biomass_gm2 ~ Treatment + (1 + Treatment | Block),
   family = gaussian(link = "identity"),
   data = warming_data
 )
-
 summary(m3)
+anova(m2,m3)
+AIC(m2, m3)
+AIC(m2)-AIC(m3)
 ```
 
-With only three blocks, the data provide very little information for estimating a random-effects covariance reliably. A convergence warning or singular fit would therefore not be surprising, and this model should not be preferred without adequate replication.
-
-```{r}
-#| label: compare-random-effects-plots
-
-p_random_intercept <- warming_data |>
-  ggplot(aes(x = Treatment, y = Value)) +
-  geom_jitter(aes(color = Block), width = 0.1) +
-  geom_line(
-    data = prediction_data,
-    aes(y = predicted, color = Block),
-    linewidth = 1
-  ) +
-  labs(title = "Random intercepts")
-
-p_random_slope <- warming_data |>
-  ggplot(aes(x = Treatment, y = Value)) +
-  geom_jitter(aes(color = Block), width = 0.1) +
-  geom_line(
-    data = prediction_data,
-    aes(y = predicted_m2, color = Block),
-    linewidth = 1
-  ) +
-  labs(title = "Random slopes")
-
-p_random_intercept / p_random_slope
-```
+With only three blocks, the data provide very little information for estimating a random-effects covariance reliably. A convergence warning or singular fit would therefore not be surprising, and this model should not be preferred without adequate replication. 
+Our anova tests shows that the models with the covariance term is not significantly better, and also the AIC test does not show sufficient support for the more complex model. So there is not enough support for including the covariance term in the model. Our model m2 with random intercepts and random slopes but no covariance term is therefore the best model for this dataset.
 
 # Nested sampling example
 
