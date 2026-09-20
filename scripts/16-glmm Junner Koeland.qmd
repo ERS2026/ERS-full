@@ -2,7 +2,7 @@
 # title: 12-linear-mixed-models.R
 # author: Han Olff
 # date: 2025-9-21
-# description: linear mixed models with lmer
+# description: linear mixed models
 # input databases: simulated data
 
 #--------------------------01 Set up the environment ----
