@@ -13,7 +13,7 @@ execute:
 
 # Introduction
 
-Mixed-effects models extend ordinary linear models by allowing some model parameters to vary among groups of observations. Such grouping is often a deliberate part of the experimental design to control for factors that you know will have an effect, you want to control for that effect, but you are not specifically interested in the variation among those groups. For example, whe you do an experiment, you may group experimental treatment in replicate blocks, to control for spatial variation in the environment. Or you may do repeated measurement on the same plot or individual animal over time. In both examples, observations are not independent, they are grouped by some factor, and this grouping needs to be accounted for in the analysis. Mixed-effects models can be used to account for the non-independence of observations within suchgroups, and they can also be used to estimate these group-level effects. They are often call random effects, as you typically select the levels (blocks, plots, individuals) at random from a larger population of possible levels. In contrast, fixed effects are those that you are specifically interested in estimating, such as the effect of a treatment, an environmental variable or changes over time.
+Mixed-effects models extend ordinary linear models by allowing some model parameters to vary among groups of observations. Such grouping is often a deliberate part of the experimental design to control for factors that you know will have an effect, you want to control for that effect, but you are not specifically interested in the variation among those groups. For example, when you do an experiment, you may group experimental treatment in replicate blocks, to control for spatial variation in the environment. Or you may do repeated measurement on the same plot or individual animal over time. In both examples, observations are not independent, they are grouped by some factor, and this grouping needs to be accounted for in the analysis. Mixed-effects models can be used to account for the non-independence of observations within suchgroups, and they can also be used to estimate these group-level effects. They are often call random effects, as you typically select the levels (blocks, plots, individuals) at random from a larger population of possible levels. In contrast, fixed effects are those that you are specifically interested in estimating, such as the effect of a treatment, an environmental variable or changes over time.
 
 This document uses two examples. The first is a simulated warming experiment in the tundra with plant biomass after one season of warming, measured in plots of different treatments nested within blocks. It illustrates a random-intercept model, a random-slope model, and a model that also estimates the intercept–slope covariance. The second uses the `Salamanders` dataset from **glmmTMB** to illustrate nested random effects and repeated sampling.
 
@@ -32,7 +32,7 @@ library(patchwork)
 
 ## Experimental design
 
-Suppose a tundra warming experiment has three blocks and four warming levels: 0 (control), 2, 4, and 8 degrees Celsius above ambient. The tundra is quite heterogenous. We therefore first select at random 10 different locations where we repeat the experiment. Each block has four subplots, one for each warming treatment. We then assign the warming treatments randomly to the subplots within each block. The experiment is run for one arctic summer, after which plant biomass is measured in each subplot. So each of the 4 warming treatments is replicated 10 times, because there are 10 blocks, and each block has one subplot for each warming treatment. The data are therefore grouped by block, and the blocks are expected to have different baseline biomass values, for example because of variation in vegetation or depth of the permafrost. But we do not try to quantify the causes of block differences (e.g., soil type, vegetation cover, etc.), we just want to account for the block-level variation in the analysis. if we would try to capture the differences between blocks in an explanatory variable, we replace the random effect with a fixed effect, but then we would have to measure **all** the relevant variables that explain the differences between blocks. In practice, this is often not possible and we do not know which ones, and we therefore use a random effect to account for block-level variation. So we just accept that block are different 'for some reason' and we want to account for that in the analysis.
+Suppose a tundra warming experiment has three blocks and four warming levels: 0 (control), 2, 4, and 8 degrees Celsius above ambient. The tundra is quite heterogenous. We therefore first select at random three different locations where we repeat the experiment. Within each block contains 30 plots with three different warming treatments (with cables in the soil), with 10 replicate plots per treatment. The warming treatments are randomly assigned to the replicates within each block. The experiment is run for one arctic summer, after which plant biomass is measured in each subplot. So each of the 4 warming treatments is replicated 30 times, because there are three blocks, and each block has 10 replicate subplots for each warming treatment. The data are therefore grouped by block, and the blocks are expected to have different baseline biomass values, for example because of variation in vegetation or depth of the permafrost. But we do not try to quantify the causes of block differences (e.g., soil type, vegetation cover, etc.), we just want to account for the block-level variation in the analysis. if we would try to capture the differences between blocks in an explanatory variable, we replace the random effect with a fixed effect, but then we would have to measure **all** the relevant variables that explain the differences between blocks. In practice, this is often not possible and we do not know which ones, and we therefore use a random effect to account for block-level variation. So we just accept that block are different 'for some reason' and we want to account for that in the analysis.
 
 The simulated values assume that warming has a linear effect within each block. The blocks have different baseline biomass values, but the first two simulated models differ in whether the warming slope is shared across blocks or allowed to vary among them. Residual variation is generated with a standard deviation of 5 g/m². We assume that the residuals are normally distributed, so we use a gaussian distribution with an identity link function.
 
@@ -124,7 +124,14 @@ $$
 
 Here, $b_{0j}$ is the block-specific deviation from the overall intercept. The treatment effect is fixed, meaning that the model estimates one average slope for all blocks.
 
-We assume that the residuals are normally distributed, so we use a gaussian distribution with an identity link function. We compare with anova() to the null model without the block effect if this model is significantly better. We also compare the AIC of the two models, where a lower AIC indicates a better trade-off between fit and model complexity.
+We assume that the residuals are normally distributed, so we use a gaussian distribution with an identity link function. We compare with anova() to the null model without the block effect if this model is significantly better. We also compare the AIC of the two models, where a lower AIC indicates a better trade-off between fit and model complexity, but on a gradual scale: How to interpret the difference in AIC:
+
+| $\Delta AIC$ | Interpretation                         |
+|--------------|----------------------------------------|
+| 0–2          | Little difference between the models   |
+| 2–4          | Some support for the lower-AIC model   |
+| 4–7          | Clear support for the lower-AIC model  |
+| \>7          | Strong support for the lower-AIC model |
 
 ```{r}
 #| label: fit-random-intercept-model
@@ -141,15 +148,16 @@ AIC(m0, m1)
 
 ```
 
-The anova test finds that adding random intercepts for blocks significantly improves the model fit, and the AIC is much lower for the random-intercept model than for the null model. So the extra complexity is justified. 
+The anova test finds that adding random intercepts for blocks significantly improves the model fit, and the delta-AIC (12 lower) is strong support for the random-intercept model compared to the null model without the block effect. So the extra complexity seems justified.
 
-## Plot random-intercept predictions
+## Plot the predictions of the random intercept model
 
 Predictions are calculated for each block so that the plot shows the different fitted intercepts while retaining the common fitted slope.
 
 ```{r}
 #| label: predict-random-intercept-model
 
+# predict the fitted values for each block across the range of warming treatments
 prediction_data <- tidyr::expand_grid(
   Treatment = seq(min(warming_data$Treatment), max(warming_data$Treatment), length.out = 100),
   Block = unique(warming_data$Block)
@@ -160,6 +168,7 @@ prediction_data$predicted <- predict(
   newdata = prediction_data
 )
 
+# plot the data and the fitted lines for each block
 warming_data |>
   ggplot(aes(x = Treatment, y = Biomass_gm2)) +
   geom_jitter(aes(color = Block), width = 0.1) +
@@ -175,21 +184,23 @@ warming_data |>
   )
 ```
 
+So this is the so-called `random intercept model`. This name is a bit confusing. You see that every block has its own intercept, but the slope is the same for all blocks. So the slope is fixed, and each block as its own intercept. The model estimates one average slope for all blocks, and each block has its own intercept that is a deviation from the overall intercept. So the intercepts are not selected at random, they are the fitted intercepts for each level of the random effect (block).
+
 # Random-slope model
 
-A random-slope model allows the warming response to vary among blocks:
+A random-slope model allows the warming response to vary among blocks, by fitting a slope for each block in addition to the block-specific intercept. So again the slopes are not random in a 'random-slope model', they are the slopes for each level of the random factor.
 
 $$
-\text{Biomass}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + b_{1j}\text{Treatment}_{ij} + \epsilon_{ij}.
+text{Biomass}_{ij} = beta_0 + beta_1text{Treatment}_{ij} + b_{0j} + b_{1j}text{Treatment}_{ij} + epsilon_{ij}.
 $$
 
-The model below estimates a random intercept and a random treatment slope. The `0 + Treatment` notation in the second random-effects term prevents that term from adding a second random intercept.
+The model below estimates a random intercept and a random treatment slope, while fixing their correlation to zero. The 0 in this notation prevents the model from estimating a correlation between the random intercept and random slope. This is often a good idea when the number of levels of the random effect is small, as in this example with only three blocks, because this covariance is then difficult to measure. A slightly shorter notation for this same model m2 would be `(1 | Block) + (Treatment || Block)`. But this notation is less clear, so we use the more explicit form here. The 1 indicates that the model estimates a random intercept for each block, and the 0 indicates that the model estimates a random slope for each block but does not estimate a correlation between the random intercept and random slope.
 
 ```{r}
 #| label: fit-random-slope-model
 
 m2 <- glmmTMB::glmmTMB(
-  Biomass_gm2 ~ Treatment + (1 | Block) + (0 + Treatment | Block),
+  Biomass_gm2 ~ (1 | Block) + (0 + Treatment | Block),
   family = gaussian(link = "identity"),
   data = warming_data
 )
@@ -199,7 +210,7 @@ car::Anova(m2)
 AIC(m1, m2)
 ```
 
-A lower AIC indicates a better trade-off between fit and model complexity. Differences of only a few AIC units should not be treated as decisive evidence on their own.
+A (more than lower AIC indicates a better trade-off between fit and model complexity. Differences of only a few AIC units should not be treated as decisive evidence on their own.
 
 ```{r}
 #| label: predict-random-slope-model
