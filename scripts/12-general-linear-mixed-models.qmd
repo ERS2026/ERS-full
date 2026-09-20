@@ -13,18 +13,17 @@ execute:
 
 # Introduction
 
-Mixed-effects models extend ordinary linear models by allowing some model parameters to vary among groups of observations. Such grouping is often a deliberate part of the experimental design to control for factors that you know will have an effect, you want to control for that effect, but you are not specifically interested in the variation among those groups. For example, whe you do an experiment, you may group experimental treatment in replicate blocks, to control for spatial variation in the environment. Or you may do repeated measurement on the same plot or individual animal over time. In both examples, observations are not independent, they are grouped by some factor, and this grouping needs to be accounted for in the analysis. Mixed-effects models can be used to account for the non-independence of observations within suchgroups, and they can also be used to estimate these group-level effects. They are often call random effects, as you typically select the levels (blocks, plots, individuals) at random from a larger population of possible levels. In contrast, fixed effects are those that you are specifically interested in estimating, such as the effect of a treatment, an environmental variable or changes over time. 
+Mixed-effects models extend ordinary linear models by allowing some model parameters to vary among groups of observations. Such grouping is often a deliberate part of the experimental design to control for factors that you know will have an effect, you want to control for that effect, but you are not specifically interested in the variation among those groups. For example, whe you do an experiment, you may group experimental treatment in replicate blocks, to control for spatial variation in the environment. Or you may do repeated measurement on the same plot or individual animal over time. In both examples, observations are not independent, they are grouped by some factor, and this grouping needs to be accounted for in the analysis. Mixed-effects models can be used to account for the non-independence of observations within suchgroups, and they can also be used to estimate these group-level effects. They are often call random effects, as you typically select the levels (blocks, plots, individuals) at random from a larger population of possible levels. In contrast, fixed effects are those that you are specifically interested in estimating, such as the effect of a treatment, an environmental variable or changes over time.
 
 This document uses two examples. The first is a simulated warming experiment in the tundra with plant biomass after one season of warming, measured in plots of different treatments nested within blocks. It illustrates a random-intercept model, a random-slope model, and a model that also estimates the intercept–slope covariance. The second uses the `Salamanders` dataset from **glmmTMB** to illustrate nested random effects and repeated sampling.
 
 # Setup
 
 ```{r}
-#| label: load-packages
-
+#| label: setup-project
 source(here::here("scripts", "01-setup.R"))
-gsheets_auth()
 
+# load libraries
 library(glmmTMB)
 library(patchwork)
 ```
@@ -33,16 +32,16 @@ library(patchwork)
 
 ## Experimental design
 
-Suppose a tundra warming experiment has three blocks and four warming levels: 2, 4, 6, and 8 degrees Celsius above ambient. Plant biomass is measured after one summer in ten observations per block–treatment combination.
+Suppose a tundra warming experiment has three blocks and four warming levels: 0 (control), 2, 4, and 8 degrees Celsius above ambient. The tundra is quite heterogenous. We therefore first select at random 10 different locations where we repeat the experiment. Each block has four subplots, one for each warming treatment. We then assign the warming treatments randomly to the subplots within each block. The experiment is run for one arctic summer, after which plant biomass is measured in each subplot. So each of the 4 warming treatments is replicated 10 times, because there are 10 blocks, and each block has one subplot for each warming treatment. The data are therefore grouped by block, and the blocks are expected to have different baseline biomass values, for example because of variation in vegetation or depth of the permafrost. But we do not try to quantify the causes of block differences (e.g., soil type, vegetation cover, etc.), we just want to account for the block-level variation in the analysis. if we would try to capture the differences between blocks in an explanatory variable, we replace the random effect with a fixed effect, but then we would have to measure **all** the relevant variables that explain the differences between blocks. In practice, this is often not possible and we do not know which ones, and we therefore use a random effect to account for block-level variation. So we just accept that block are different 'for some reason' and we want to account for that in the analysis.
 
-The simulation assumes that warming has a linear effect within each block. The blocks have different baseline biomass values, but the first two simulated models differ in whether the warming slope is shared across blocks or allowed to vary among them. Residual variation is generated with a standard deviation of 5 g/m².
+The simulated values assume that warming has a linear effect within each block. The blocks have different baseline biomass values, but the first two simulated models differ in whether the warming slope is shared across blocks or allowed to vary among them. Residual variation is generated with a standard deviation of 5 g/m². We assume that the residuals are normally distributed, so we use a gaussian distribution with an identity link function.
 
 ```{r}
 #| label: simulate-warming-data
+# set the seed for reproducibility
+set.seed(5831) 
 
-set.seed(5831)
-
-treatments <- c(2, 4, 6, 8)
+treatments <- c(0, 2, 4, 6)
 treatment_effects <- list(
   Block1 = c(5, 10, 15, 20),
   Block2 = c(5, 8, 12, 15),
@@ -56,12 +55,13 @@ warming_data <- purrr::map_dfr(
   function(block) {
     purrr::map_dfr(seq_along(treatments), function(i) {
       treatment <- treatments[i]
+      # Calculate the mean for this block-treatment combination
       mean_value <- treatment * treatment_effects[[block]][i] + block_means[[block]]
 
       tibble(
         Block = block,
         Treatment = treatment,
-        Value = rnorm(n, mean = mean_value, sd = 5)
+        Biomass_gm2 = rnorm(n, mean = mean_value, sd = 5)
       )
     })
   }
@@ -72,13 +72,40 @@ warming_data
 
 ## Explore the simulated data
 
-The first plot shows the simulated observations, with colour identifying the block. The second removes the colour grouping to show the overall relationship without highlighting block membership.
+We explore the results, where we jitter the point to avoid plotting points on top of eachother, allowing to see the variation better. And we fit a linear model to the data to visualize the overall trend. This model without the block effect will be our null model for comparison. We fit this directly with glmmTMB instead of lm() to keep the model fitting (maximum likelihood) consistent with the later models that include random effects. So we can statistically compare if more complex models with the random effects are better than the null model. The null model is a fixed-effects model with only the warming treatment as a predictor, and it does not account for block-level variation.
+
+We see a clear positive effect of warming. But we have not accounted yet for the block-level variation, which is what we will do in the next section.
+
+```{r}
+#| label: plot-simulated-data-uncoloured
+
+m0 <- glmmTMB::glmmTMB(
+  Biomass_gm2 ~ Treatment,
+  family = gaussian(link = "identity"),
+  data = warming_data
+)
+m0
+summary(m0)
+
+
+warming_data |>
+  ggplot(aes(x = Treatment, y = Biomass_gm2)) +
+  geom_jitter(width = 0.05) +
+  geom_smooth(method = "lm", formula = "y ~ x", color = "blue") +
+  labs(
+    x = "Warming treatment (°C enhancement)",
+    y = "Biomass (g/m²)",
+    title = "Simulated warming experiment without block colours"
+  )
+```
+
+When we color the points by block, we see that the blocks have different baseline biomass values (biomass in the control plots, as 0 degree warming), and also the effect of warming slope may be different across blocks. This is what we will model in the next section. So we have to account also for blocks.
 
 ```{r}
 #| label: plot-simulated-data
 
 warming_data |>
-  ggplot(aes(x = Treatment, y = Value, color = Block)) +
+  ggplot(aes(x = Treatment, y = Biomass_gm2, color = Block)) +
   geom_jitter(width = 0.05) +
   labs(
     x = "Warming treatment (°C enhancement)",
@@ -87,41 +114,34 @@ warming_data |>
   )
 ```
 
-```{r}
-#| label: plot-simulated-data-uncoloured
-
-warming_data |>
-  ggplot(aes(x = Treatment, y = Value)) +
-  geom_jitter(width = 0.05) +
-  labs(
-    x = "Warming treatment (°C enhancement)",
-    y = "Biomass (g/m²)",
-    title = "Simulated warming experiment without block colours"
-  )
-```
-
 # Random-intercept model
 
-A random-intercept model gives each block its own baseline biomass while estimating one common warming slope:
+A random-intercept mixed model fits for each block its own baseline biomass (intercept) while estimating one common warming slope:
 
 $$
-\text{Value}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + \epsilon_{ij}.
+\text{Biomass}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + \epsilon_{ij}.
 $$
 
 Here, $b_{0j}$ is the block-specific deviation from the overall intercept. The treatment effect is fixed, meaning that the model estimates one average slope for all blocks.
+
+We assume that the residuals are normally distributed, so we use a gaussian distribution with an identity link function. We compare with anova() to the null model without the block effect if this model is significantly better. We also compare the AIC of the two models, where a lower AIC indicates a better trade-off between fit and model complexity.
 
 ```{r}
 #| label: fit-random-intercept-model
 
 m1 <- glmmTMB::glmmTMB(
-  Value ~ Treatment + (1 | Block),
+  Biomass_gm2 ~ Treatment + (1 | Block),
   family = gaussian(link = "identity"),
   data = warming_data
 )
 
 summary(m1)
-car::Anova(m1)
+anova(m0, m1)
+AIC(m0, m1)
+
 ```
+
+The anova test finds that adding random intercepts for blocks significantly improves the model fit, and the AIC is much lower for the random-intercept model than for the null model. So the extra complexity is justified. 
 
 ## Plot random-intercept predictions
 
@@ -141,7 +161,7 @@ prediction_data$predicted <- predict(
 )
 
 warming_data |>
-  ggplot(aes(x = Treatment, y = Value)) +
+  ggplot(aes(x = Treatment, y = Biomass_gm2)) +
   geom_jitter(aes(color = Block), width = 0.1) +
   geom_line(
     data = prediction_data,
@@ -160,7 +180,7 @@ warming_data |>
 A random-slope model allows the warming response to vary among blocks:
 
 $$
-\text{Value}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + b_{1j}\text{Treatment}_{ij} + \epsilon_{ij}.
+\text{Biomass}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + b_{1j}\text{Treatment}_{ij} + \epsilon_{ij}.
 $$
 
 The model below estimates a random intercept and a random treatment slope. The `0 + Treatment` notation in the second random-effects term prevents that term from adding a second random intercept.
@@ -169,7 +189,7 @@ The model below estimates a random intercept and a random treatment slope. The `
 #| label: fit-random-slope-model
 
 m2 <- glmmTMB::glmmTMB(
-  Value ~ Treatment + (1 | Block) + (0 + Treatment | Block),
+  Biomass_gm2 ~ Treatment + (1 | Block) + (0 + Treatment | Block),
   family = gaussian(link = "identity"),
   data = warming_data
 )
@@ -354,13 +374,13 @@ AIC(m5, m6)
 
 If the sampling design contains repeated sample identifiers within each site, a nested random-effects structure can be written as:
 
-```r
+``` r
 (1 | site) + (1 | site:sample)
 ```
 
 This is equivalent to the shorthand:
 
-```r
+``` r
 (1 | site/sample)
 ```
 
