@@ -1,0 +1,392 @@
+---
+title: "Generalized linear mixed models"
+subtitle: "Random intercepts, random slopes, and nested sampling designs"
+author: "Han Olff"
+date: 2025-09-21
+format: html
+editor_options:
+  chunk_output_type: console
+execute:
+  warning: false
+  message: false
+---
+
+::: {.callout-note}
+This document was generated using AI under general human direction. At the time of generation, the contents have not been comprehensively reviewed by a human analyst.
+:::
+
+# Introduction
+
+Mixed-effects models extend ordinary regression models by allowing some model parameters to vary among groups. They are useful when observations are grouped or repeated—for example, measurements from several plots within the same block or samples collected at the same site.
+
+This document uses two examples. The first is a simulated warming experiment with biomass measured in plots nested within blocks. It illustrates a random-intercept model, a random-slope model, and a model that also estimates the intercept–slope covariance. The second uses the `Salamanders` dataset from **glmmTMB** to illustrate nested random effects and repeated sampling.
+
+# Setup
+
+```{r}
+#| label: load-packages
+
+source(here::here("scripts", "01-setup.R"))
+gsheets_auth()
+
+library(glmmTMB)
+library(car)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(patchwork)
+```
+
+# Simulated warming experiment
+
+## Experimental design
+
+Suppose a tundra warming experiment has three blocks and four warming levels: 2, 4, 6, and 8 degrees Celsius above ambient. Plant biomass is measured after one summer in ten observations per block–treatment combination.
+
+The simulation assumes that warming has a linear effect within each block. The blocks have different baseline biomass values, but the first two simulated models differ in whether the warming slope is shared across blocks or allowed to vary among them. Residual variation is generated with a standard deviation of 5 g/m².
+
+```{r}
+#| label: simulate-warming-data
+
+set.seed(5831)
+
+treatments <- c(2, 4, 6, 8)
+treatment_effects <- list(
+  Block1 = c(5, 10, 15, 20),
+  Block2 = c(5, 8, 12, 15),
+  Block3 = c(20, 25, 27, 30)
+)
+block_means <- c(Block1 = 5, Block2 = 10, Block3 = 15)
+n <- 10
+
+warming_data <- purrr::map_dfr(
+  names(treatment_effects),
+  function(block) {
+    purrr::map_dfr(seq_along(treatments), function(i) {
+      treatment <- treatments[i]
+      mean_value <- treatment * treatment_effects[[block]][i] + block_means[[block]]
+
+      tibble(
+        Block = block,
+        Treatment = treatment,
+        Value = rnorm(n, mean = mean_value, sd = 5)
+      )
+    })
+  }
+)
+
+warming_data
+```
+
+## Explore the simulated data
+
+The first plot shows the simulated observations, with colour identifying the block. The second removes the colour grouping to show the overall relationship without highlighting block membership.
+
+```{r}
+#| label: plot-simulated-data
+
+warming_data |>
+  ggplot(aes(x = Treatment, y = Value, color = Block)) +
+  geom_jitter(width = 0.05) +
+  labs(
+    x = "Warming treatment (°C enhancement)",
+    y = "Biomass (g/m²)",
+    title = "Simulated warming experiment"
+  )
+```
+
+```{r}
+#| label: plot-simulated-data-uncoloured
+
+warming_data |>
+  ggplot(aes(x = Treatment, y = Value)) +
+  geom_jitter(width = 0.05) +
+  labs(
+    x = "Warming treatment (°C enhancement)",
+    y = "Biomass (g/m²)",
+    title = "Simulated warming experiment without block colours"
+  )
+```
+
+# Random-intercept model
+
+A random-intercept model gives each block its own baseline biomass while estimating one common warming slope:
+
+$$
+\text{Value}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + \epsilon_{ij}.
+$$
+
+Here, $b_{0j}$ is the block-specific deviation from the overall intercept. The treatment effect is fixed, meaning that the model estimates one average slope for all blocks.
+
+```{r}
+#| label: fit-random-intercept-model
+
+m1 <- glmmTMB::glmmTMB(
+  Value ~ Treatment + (1 | Block),
+  family = gaussian(link = "identity"),
+  data = warming_data
+)
+
+summary(m1)
+car::Anova(m1)
+```
+
+## Plot random-intercept predictions
+
+Predictions are calculated for each block so that the plot shows the different fitted intercepts while retaining the common fitted slope.
+
+```{r}
+#| label: predict-random-intercept-model
+
+prediction_data <- tidyr::expand_grid(
+  Treatment = seq(min(warming_data$Treatment), max(warming_data$Treatment), length.out = 100),
+  Block = unique(warming_data$Block)
+)
+
+prediction_data$predicted <- predict(
+  m1,
+  newdata = prediction_data
+)
+
+warming_data |>
+  ggplot(aes(x = Treatment, y = Value)) +
+  geom_jitter(aes(color = Block), width = 0.1) +
+  geom_line(
+    data = prediction_data,
+    aes(y = predicted, color = Block),
+    linewidth = 1
+  ) +
+  labs(
+    x = "Warming treatment (°C enhancement)",
+    y = "Biomass (g/m²)",
+    title = "Random-intercept model: common slope, block-specific intercepts"
+  )
+```
+
+# Random-slope model
+
+A random-slope model allows the warming response to vary among blocks:
+
+$$
+\text{Value}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + b_{1j}\text{Treatment}_{ij} + \epsilon_{ij}.
+$$
+
+The model below estimates a random intercept and a random treatment slope. The `0 + Treatment` notation in the second random-effects term prevents that term from adding a second random intercept.
+
+```{r}
+#| label: fit-random-slope-model
+
+m2 <- glmmTMB::glmmTMB(
+  Value ~ Treatment + (1 | Block) + (0 + Treatment | Block),
+  family = gaussian(link = "identity"),
+  data = warming_data
+)
+
+summary(m2)
+car::Anova(m2)
+AIC(m1, m2)
+```
+
+A lower AIC indicates a better trade-off between fit and model complexity. Differences of only a few AIC units should not be treated as decisive evidence on their own.
+
+```{r}
+#| label: predict-random-slope-model
+
+prediction_data$predicted_m2 <- predict(
+  m2,
+  newdata = prediction_data
+)
+
+warming_data |>
+  ggplot(aes(x = Treatment, y = Value)) +
+  geom_jitter(aes(color = Block), width = 0.1) +
+  geom_line(
+    data = prediction_data,
+    aes(y = predicted_m2, color = Block),
+    linewidth = 1
+  ) +
+  labs(
+    x = "Warming treatment (°C enhancement)",
+    y = "Biomass (g/m²)",
+    title = "Random-slope model: block-specific intercepts and slopes"
+  )
+```
+
+## Random intercept–slope covariance
+
+A more complex model allows the random intercept and random slope to be correlated. This asks whether blocks with higher baseline biomass also tend to have stronger or weaker warming responses.
+
+```{r}
+#| label: fit-correlated-random-effects-model
+
+m3 <- glmmTMB::glmmTMB(
+  Value ~ Treatment + (1 + Treatment | Block),
+  family = gaussian(link = "identity"),
+  data = warming_data
+)
+
+summary(m3)
+```
+
+With only three blocks, the data provide very little information for estimating a random-effects covariance reliably. A convergence warning or singular fit would therefore not be surprising, and this model should not be preferred without adequate replication.
+
+```{r}
+#| label: compare-random-effects-plots
+
+p_random_intercept <- warming_data |>
+  ggplot(aes(x = Treatment, y = Value)) +
+  geom_jitter(aes(color = Block), width = 0.1) +
+  geom_line(
+    data = prediction_data,
+    aes(y = predicted, color = Block),
+    linewidth = 1
+  ) +
+  labs(title = "Random intercepts")
+
+p_random_slope <- warming_data |>
+  ggplot(aes(x = Treatment, y = Value)) +
+  geom_jitter(aes(color = Block), width = 0.1) +
+  geom_line(
+    data = prediction_data,
+    aes(y = predicted_m2, color = Block),
+    linewidth = 1
+  ) +
+  labs(title = "Random slopes")
+
+p_random_intercept / p_random_slope
+```
+
+# Nested sampling example
+
+## Data structure
+
+The `Salamanders` data contain repeated samples from sites. The same site can therefore contribute multiple observations, and samples are nested within sites. The data also include whether a site was mined and a measure of vegetation cover.
+
+```{r}
+#| label: load-salamanders-data
+
+data(Salamanders, package = "glmmTMB")
+
+dat <- Salamanders |>
+  filter(spp == "DM") |>
+  mutate(sample = factor(sample)) |>
+  as_tibble()
+
+dat
+```
+
+The following tables help inspect how sites, mining status, and samples are represented in the design.
+
+```{r}
+#| label: inspect-nested-design
+
+table(dat$site, dat$mined)
+table(dat$site, dat$sample)
+```
+
+## Explore the response and predictors
+
+```{r}
+#| label: plot-salamander-data
+
+dat |>
+  ggplot(aes(x = mined, y = count, color = sample)) +
+  geom_boxplot()
+
+dat |>
+  ggplot(aes(x = site, y = count)) +
+  geom_boxplot(aes(fill = site))
+
+dat |>
+  ggplot(aes(x = cover, y = count, color = site)) +
+  geom_point(aes(shape = mined)) +
+  geom_smooth(method = "lm")
+```
+
+# Fixed-effects count models
+
+## Cover only
+
+The first Poisson model estimates the association between vegetation cover and salamander count without accounting for mining status or site-level dependence.
+
+```{r}
+#| label: fit-cover-model
+
+m4 <- glmmTMB::glmmTMB(
+  count ~ cover,
+  family = poisson(link = "log"),
+  data = dat
+)
+
+summary(m4)
+```
+
+## Add mining status
+
+The second model adds mining status as a fixed effect.
+
+```{r}
+#| label: fit-cover-mining-model
+
+m5 <- glmmTMB::glmmTMB(
+  count ~ cover + mined,
+  family = poisson(link = "log"),
+  data = dat
+)
+
+summary(m5)
+car::Anova(m5)
+```
+
+# Add site-level dependence
+
+## Random intercept for site
+
+Because multiple samples were collected from the same site, observations from one site may be more similar than observations from different sites. A random site intercept accounts for this dependence by allowing each site to have its own baseline count.
+
+```{r}
+#| label: fit-site-random-intercept
+
+m6 <- glmmTMB::glmmTMB(
+  count ~ cover + mined + (1 | site),
+  family = poisson(link = "log"),
+  data = dat
+)
+
+summary(m6)
+car::Anova(m6)
+AIC(m5, m6)
+```
+
+## Add the nested sample effect
+
+If the sampling design contains repeated sample identifiers within each site, a nested random-effects structure can be written as:
+
+```r
+(1 | site) + (1 | site:sample)
+```
+
+This is equivalent to the shorthand:
+
+```r
+(1 | site/sample)
+```
+
+The expanded form makes the two sources of variation explicit: variation among sites and additional variation among samples within sites.
+
+```{r}
+#| label: fit-nested-random-effects-model
+
+m7 <- glmmTMB::glmmTMB(
+  count ~ cover + mined + (1 | site) + (1 | site:sample),
+  family = poisson(link = "log"),
+  data = dat
+)
+
+summary(m7)
+car::Anova(m7)
+AIC(m6, m7)
+```
+
+The final comparison asks whether adding the nested sample-level random effect improves the model enough to justify the extra complexity. The answer should be based on the model comparison, convergence, variance estimates, and the sampling design—not on AIC alone.
