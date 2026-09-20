@@ -1,0 +1,147 @@
+---
+title: "Generalized linear mixed models"
+subtitle: "Random intercepts, random slopes, and nested sampling designs"
+author: "Han Olff"
+date: 2025-09-21
+format: html
+editor_options:
+  chunk_output_type: console
+execute:
+  warning: false
+  message: false
+---
+
+
+# Nested sampling example
+
+## Data structure
+
+The `Salamanders` data contain repeated samples from sites. The same site can therefore contribute multiple observations, and samples are nested within sites. The data also include whether a site was mined and a measure of vegetation cover.
+
+```{r}
+#| label: load-salamanders-data
+
+data(Salamanders, package = "glmmTMB")
+
+dat <- Salamanders |>
+  filter(spp == "DM") |>
+  mutate(sample = factor(sample)) |>
+  as_tibble()
+
+dat
+```
+
+The following tables help inspect how sites, mining status, and samples are represented in the design.
+
+```{r}
+#| label: inspect-nested-design
+
+table(dat$site, dat$mined)
+table(dat$site, dat$sample)
+```
+
+## Explore the response and predictors
+
+```{r}
+#| label: plot-salamander-data
+
+dat |>
+  ggplot(aes(x = mined, y = count, color = sample)) +
+  geom_boxplot()
+
+dat |>
+  ggplot(aes(x = site, y = count)) +
+  geom_boxplot(aes(fill = site))
+
+dat |>
+  ggplot(aes(x = cover, y = count, color = site)) +
+  geom_point(aes(shape = mined)) +
+  geom_smooth(method = "lm")
+```
+
+# Fixed-effects count models
+
+## Cover only
+
+The first Poisson model estimates the association between vegetation cover and salamander count without accounting for mining status or site-level dependence.
+
+```{r}
+#| label: fit-cover-model
+
+m4 <- glmmTMB::glmmTMB(
+  count ~ cover,
+  family = poisson(link = "log"),
+  data = dat
+)
+
+summary(m4)
+```
+
+## Add mining status
+
+The second model adds mining status as a fixed effect.
+
+```{r}
+#| label: fit-cover-mining-model
+
+m5 <- glmmTMB::glmmTMB(
+  count ~ cover + mined,
+  family = poisson(link = "log"),
+  data = dat
+)
+
+summary(m5)
+car::Anova(m5)
+```
+
+# Add site-level dependence
+
+## Random intercept for site
+
+Because multiple samples were collected from the same site, observations from one site may be more similar than observations from different sites. A random site intercept accounts for this dependence by allowing each site to have its own baseline count.
+
+```{r}
+#| label: fit-site-random-intercept
+
+m6 <- glmmTMB::glmmTMB(
+  count ~ cover + mined + (1 | site),
+  family = poisson(link = "log"),
+  data = dat
+)
+
+summary(m6)
+car::Anova(m6)
+AIC(m5, m6)
+```
+
+## Add the nested sample effect
+
+If the sampling design contains repeated sample identifiers within each site, a nested random-effects structure can be written as:
+
+``` r
+(1 | site) + (1 | site:sample)
+```
+
+This is equivalent to the shorthand:
+
+``` r
+(1 | site/sample)
+```
+
+The expanded form makes the two sources of variation explicit: variation among sites and additional variation among samples within sites.
+
+```{r}
+#| label: fit-nested-random-effects-model
+
+m7 <- glmmTMB::glmmTMB(
+  count ~ cover + mined + (1 | site) + (1 | site:sample),
+  family = poisson(link = "log"),
+  data = dat
+)
+
+summary(m7)
+car::Anova(m7)
+AIC(m6, m7)
+```
+
+The final comparison asks whether adding the nested sample-level random effect improves the model enough to justify the extra complexity. The answer should be based on the model comparison, convergence, variance estimates, and the sampling design—not on AIC alone.
