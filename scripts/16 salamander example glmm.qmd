@@ -12,9 +12,21 @@ execute:
 ---
 
 
-# Nested sampling example
+# Setup
 
-## Data structure
+```{r}
+#| label: setup-project
+source(here::here("scripts", "01-setup.R"))
+
+# load libraries
+library(glmmTMB)
+library(patchwork)
+```
+
+
+
+
+# Data structure
 
 The `Salamanders` data contain repeated samples from sites. The same site can therefore contribute multiple observations, and samples are nested within sites. The data also include whether a site was mined and a measure of vegetation cover.
 
