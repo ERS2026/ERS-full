@@ -33,7 +33,7 @@ model_lm <- stats::lm(
 )
 
 # Generalized linear model with predictor x
-model_glm <- stats::glm(
+model_glm <- stats::glmmTMB(
   y ~ x,
   family = binomial, # depends on type of y
   data = dat
