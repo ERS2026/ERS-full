@@ -248,7 +248,7 @@ warming_data |>
 
 ## add a parameter to the model for the covariance between the random intercept and random slope
 
-An even more complex model allows the random intercept and random slope to be correlated. If significant, it captures if blocks with higher baseline biomass also tend to have stronger warming responses (as seems to be the case here), so the intercepts and slopes of blocks are positively correlated. Also this correlation can be negative. With only few levels of the random factor (3 in this case) we not always have enough power to fit this effect. But we will try.
+An even more complex model allows the random intercept and random slope to be correlated. If significant, it captures if blocks with higher baseline biomass also tend to have stronger warming responses (as seems to be the case here), so the intercepts and slopes of blocks are positively correlated. Also this correlation can be negative. With only few levels of the random factor (3 in this case) we not always have enough power to fit this effect. But we will try. 
 
 ```{r}
 #| label: fit-correlated-random-effects-model
