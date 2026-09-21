@@ -179,4 +179,79 @@ AIC(m3, m4)
 AIC(m3)-AIC(m4)
 ```
 
-The final comparison asks whether adding the nested sample-level random effect improves the model enough to justify the extra complexity. The answer on the best model should be based on the check of the family of the model, model comparison, convergence, variance estimates, checks of assumptions etc and the sampling design—not on AIC alone. Use the similar checks as we did in script 11 for the generalized linear models. 
+The final comparison asks whether adding the nested sample-level random effect improves the model enough to justify the extra complexity. The answer on the best model should be based on the check of the family of the model, model comparison, convergence, variance estimates, checks of assumptions etc and the sampling design—not on AIC alone. Use the similar checks as we did in script 11 for the generalized linear models.
+
+Some further notes on the model specification:
+
+1.  if locations within a site that are sampled at each sampling round are not permanent and not tracked, use as above:\
+    `count ~ cover + mined + (1 | site) + (1 | site:sample)`
+
+    \`Here:
+
+    - `(1 | site)` accounts for repeated measurements from the same site.
+
+    - `(1 | site:sample)` accounts for extra variation specific to each site during each sampling occasion, caused partly by sampling different locations.
+
+2.  if each location within a site is sampled repeatedly, and has a permanent identifier 'location', that becomes an extra grouping factor and you model it explicitly as:
+
+```         
+`count ~ cover + mined +  (1 | site) +  (1 | site:location) +  (1 | sample)`
+
+The term `(1 | site:location)` captures repeated measurements at the same location within a site, capturing spatial heterogeneity within each site. The term `(1 | site:sample)` captures occasion-specific variation across locations (e.g, the weather on each sampling day)
+```
+
+3.  For count responses, always check carefull for overdispersion, so if the variance of the **conditional response distribution** is larger than the mean. If so, use a negative binomial distribution:
+
+    For a count response, also consider a negative-binomial model if the conditional response distribution is overdispersed (variance\>mean):
+
+    `glmmTMB::glmmTMB( count ~ cover + mined + (1 | site) + (1 | site:sample),                                     family = glmmTMB::nbinom2)`
+
+4.  What is the **conditional response distribution** in a Poisson regression (or in any glm or glmm? In a generalized linear model as a Poisson regression, the conditional response distribution describes how the response variable $Y_i$ is distributed for a given set of predictor values.
+
+We write:
+
+$$Y_i \mid \mathbf{x}_i \sim \operatorname{Poisson}(\mu_i)$$
+
+This means that once the predictors $\mathbf{x}_i$ are fixed, the observed count $Y_i$ is assumed to come from a Poisson distribution with mean $\mu_i$.
+
+For a Poisson distribution, the expected mean and variance are the same, so for a particular set of predictors $\mathbf{x}_i$
+
+$$E(Y_i \mid \mathbf{x}_i) = \mu_i$$
+
+and
+
+$$\operatorname{Var}(Y_i \mid \mathbf{x}_i) = \mu_i.$$
+
+So the key Poisson assumption is:
+
+Conditional on the predictors, the variance of the response equals its mean.
+
+The regression model then determines how this conditional mean depends on the predictors. With the usual log link:
+
+\beta\_0 + \beta*1 x*{1i} + \beta*2 x*{2i} + \cdots \$\$
+
+or equivalently,
+
+\exp( \beta\_0 + \beta*1 x*{1i} + \beta*2 x*{2i} + \cdots ). \$\$
+
+For example, suppose we model the number of salamanders as a function of tree cover:
+
+$$Y_i \mid \text{treecover}_i
+\sim
+\operatorname{Poisson}(\mu_i)$$
+
+with
+
+\beta\_0 + \beta\_1 \text{treecover}\_i. \$\$
+
+If the model predicts $\mu_i = 4$ (on average 4 salamanders) for a particular tree cover intensity, this does not mean that every plot with that tree cover contains exactly 4 species.
+
+Instead, counts among such plots are assumed to follow a Poisson distribution with mean 4 and variance 4:
+
+$$Y_i \sim \operatorname{Poisson}(4).$$
+
+Individual plots may therefore contain, for example, 2, 3, 4, 5, or 6 species, while the expected number is 4 (the most likely number).
+
+An important distinction is that the overall distribution of $Y$ (the number of salamanders counted) does not have to look Poisson. The assumption concerns the distribution of $Y$ conditional on the predictors; each tree cover is expected (if the variable is significant) to have a different count for salamanders.
+
+So different observations can have different predictor values, giving different expected values $\mu_i$ and therefore different Poisson distributions.
