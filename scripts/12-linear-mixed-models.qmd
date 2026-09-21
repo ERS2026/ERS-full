@@ -15,7 +15,7 @@ execute:
 
 Mixed-effects models extend ordinary linear models by allowing some model parameters to vary among groups of observations. Such grouping is often a deliberate part of the experimental design to control for factors that you know will have an effect, you want to control for that effect, but you are not specifically interested in the variation among those groups. For example, when you do an experiment, you may group experimental treatment in replicate blocks, to control for spatial variation in the environment. Or you may do repeated measurement on the same plot or individual animal over time. In both examples, observations are not independent, they are grouped by some factor, and this grouping needs to be accounted for in the analysis. Mixed-effects models can be used to account for the non-independence of observations within suchgroups, and they can also be used to estimate these group-level effects. They are often call random effects, as you typically select the levels (blocks, plots, individuals) at random from a larger population of possible levels. In contrast, fixed effects are those that you are specifically interested in estimating, such as the effect of a treatment, an environmental variable or changes over time.
 
-This document uses a examples of a simulated warming experiment in the tundra with plant biomass after one season of warming, measured in plots of different treatments nested within blocks. It illustrates a random-intercept model, a random-slope model, and a model that also estimates the intercept–slope covariance. 
+This document uses a examples of a simulated warming experiment in the tundra with plant biomass after one season of warming, measured in plots of different treatments nested within blocks. It illustrates a random-intercept model, a random-slope model, and a model that also estimates the intercept–slope covariance.
 
 # Setup
 
@@ -24,8 +24,9 @@ This document uses a examples of a simulated warming experiment in the tundra wi
 source(here::here("scripts", "01-setup.R"))
 
 # load libraries
-library(glmmTMB)
-library(patchwork)
+library(glmmTMB) # for linear mixed models and generalized linear mixed models
+library(patchwork) # for putting plots together
+library(MuMIn) # for model comparison
 ```
 
 # Simulated warming experiment
@@ -41,7 +42,7 @@ The simulated values assume that warming has a linear effect within each block. 
 # set the seed for reproducibility
 set.seed(5831) 
 
-treatments <- c(0, 2, 4, 6)
+treatments <- c(0, 2, 4, 8)
 treatment_effects <- list(
   Block1 = c(5, 10, 15, 20),
   Block2 = c(5, 8, 12, 15),
@@ -118,9 +119,7 @@ warming_data |>
 
 A random-intercept mixed model fits for each block its own baseline biomass (intercept) while estimating one common warming slope:
 
-$$
-\text{Biomass}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + \epsilon_{ij}.
-$$
+$$\text{Biomass}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + \epsilon_{ij}.$$
 
 Here, $b_{0j}$ is the block-specific deviation from the overall intercept. The treatment effect is fixed, meaning that the model estimates one average slope for all blocks.
 
@@ -149,7 +148,17 @@ AIC(m0)-AIC(m1)
 
 ```
 
-The anova test finds that adding random intercepts for blocks significantly improves the model fit, and the delta-AIC (101 lower) is strong support for the random-intercept model compared to the null model without the block effect. So the extra complexity seems justified.
+An easy way to compare the AIC of multiple models, especially if this is a longer list of models, is by using the tabular output from the model.sel function in the package "Multi Model Inference". It makes a list of the models that you compare, with the best model at the top of the list.
+
+```{r}
+
+# run the function model.sel
+MuMIn::model.sel(m0,m1)
+```
+
+The anova test finds that adding random intercepts for blocks significantly improves the model fit, and the delta-AIC (106 lower) is strong support for the random-intercept model compared to the null model without the block effect. So the extra complexity seems justified.
+
+Note the difference between using AIC and AICc. AICc is the AIC corrected for small sample sizes, which results in a higher AIC value and also penalises the model for increased complexity. Typically use AICc when sample size is smaller than 40. AICc values will converge with AIC values as sample sizes increase, so you could opt to always choose AICc as there will in general be no difference with AIC for higher sample sizes.
 
 ## Plot the predictions of the random intercept model
 
@@ -191,11 +200,9 @@ This plot shows the so-called `random intercept model`. This name is a bit confu
 
 A random-slope model allows the warming response to vary among blocks, by fitting a slope for each block in addition to the block-specific intercept. So again the slopes are not random in a 'random-slope model', they are the slopes for each level of the random factor.
 
-$$
-\text{Biomass}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + b_{1j}\text{Treatment}_{ij} + \epsilon_{ij}.
-$$
+$$\text{Biomass}_{ij} = \beta_0 + \beta_1\text{Treatment}_{ij} + b_{0j} + b_{1j}\text{Treatment}_{ij} + \epsilon_{ij}.$$
 
-The model below estimates a random intercept and a random treatment slope, while fixing their correlation to zero. The 0 in this notation prevents the model from estimating a correlation between the random intercept and random slope. This is often a good idea when the number of levels of the random effect is small, as in this example with only three blocks, because this covariance is then difficult to measure. A slightly shorter notation for this same model m2 would be ` Treatment + (Treatment || Block)`. But we use the more explicit form here as it is more clear, we just add the term (0 + Treatment | Block) to the previous model. The 1 in (1|block)indicates that the model estimates a random intercept for each block, and the 0 in (0 + Treatment | Block)indicates that the model estimates a random slope for each block but does not estimate a correlation between the random intercept and random slope (they are assumed to be independent, their covariance is fixed to zero). We fit the model again, test it with anova, and compare it with AIC to the previous model. 
+The model below estimates a random intercept and a random treatment slope, while fixing their correlation to zero. The 0 in this notation prevents the model from estimating a correlation between the random intercept and random slope. This is often a good idea when the number of levels of the random effect is small, as in this example with only three blocks, because this covariance is then difficult to measure. A slightly shorter notation for this same model m2 would be `Treatment + (Treatment || Block)`. But we use the more explicit form here as it is more clear, we just add the term (0 + Treatment \| Block) to the previous model. The 1 in (1\|block)indicates that the model estimates a random intercept for each block, and the 0 in (0 + Treatment \| Block)indicates that the model estimates a random slope for each block but does not estimate a correlation between the random intercept and random slope (they are assumed to be independent, their covariance is fixed to zero). We fit the model again, test it with anova, and compare it with AIC to the previous model.
 
 ```{r}
 #| label: fit-random-slope-model
@@ -210,7 +217,7 @@ summary(m2)
 anova(m1,m2)
 AIC(m1, m2)
 AIC(m1)-AIC(m2)
-
+MuMIn::model.sel(m0,m1,m2)
 
 ```
 
@@ -241,7 +248,7 @@ warming_data |>
 
 ## add a parameter to the model for the covariance between the random intercept and random slope
 
-An even more complex model allows the random intercept and random slope to be correlated. This asks whether blocks with higher baseline biomass also tend to have stronger or weaker warming responses (as seems to be the case here). With only few levels of the random factor (3 in this case) we not always have enough power to fit this effect. But we will try. 
+An even more complex model allows the random intercept and random slope to be correlated. If significant, it captures if blocks with higher baseline biomass also tend to have stronger warming responses (as seems to be the case here), so the intercepts and slopes of blocks are positively correlated. Also this correlation can be negative. With only few levels of the random factor (3 in this case) we not always have enough power to fit this effect. But we will try.
 
 ```{r}
 #| label: fit-correlated-random-effects-model
@@ -255,8 +262,7 @@ summary(m3)
 anova(m2,m3)
 AIC(m2, m3)
 AIC(m2)-AIC(m3)
+model.sel(m0,m1,m2,m3)
 ```
 
-With only three blocks, the data provide very little information for estimating a random-effects covariance reliably. A convergence warning or singular fit would therefore not be surprising, and this model should not be preferred without adequate replication. 
-Our anova tests shows that the models with the covariance term is not significantly better, and also the AIC test does not show sufficient support for the more complex model. So there is not enough support for including the covariance term in the model. Our model m2 with random intercepts and random slopes but no covariance term is therefore the best model for this dataset.
-
+With only three blocks, the data provide very little information for estimating a random-effects covariance reliably. A convergence warning or singular fit would therefore not be surprising, and this model should not be preferred without adequate replication. Our anova tests shows that the models with the covariance term is not significantly better, and also the AIC test does not show sufficient support for the more complex model. So there is not enough support for including the covariance term in the model. Our model m2 with random intercepts and random slopes but no covariance term is therefore the best model for this dataset.
