@@ -181,7 +181,7 @@ AIC(m3)-AIC(m4)
 
 The final comparison asks whether adding the nested sample-level random effect improves the model enough to justify the extra complexity. The answer on the best model should be based on the check of the family of the model, model comparison, convergence, variance estimates, checks of assumptions etc and the sampling design—not on AIC alone. Use the similar checks as we did in script 11 for the generalized linear models.
 
-Some further notes on the model specification:
+# Some further notes on the model specification:
 
 1.  if locations within a site that are sampled at each sampling round are not permanent and not tracked, use as above:\
     `count ~ cover + mined + (1 | site) + (1 | site:sample)`
@@ -206,12 +206,9 @@ The term `(1 | site:location)` captures repeated measurements at the same loca
 
     `glmmTMB::glmmTMB( count ~ cover + mined + (1 | site) + (1 | site:sample),                                     family = glmmTMB::nbinom2)`
 
-4. if your different sampling rounds aim to capture a temporal trends, then time becomes a fixed effect and you can model it for example as:
+4.  if your different sampling rounds aim to capture a temporal trends, then time becomes a fixed effect and you can model it for example as:
 
-count ~ cover + mined + time + (1 | site) + (1 | site:samplingstation)
-where you may also consider a random slope for time, if you test if  the temporal trend differs among sites: 
-count ~ cover + mined + time +  (1 + time | site) +   (1 | site:samplingstation)
-
+count \~ cover + mined + time + (1 \| site) + (1 \| site:samplingstation) where you may also consider a random slope for time, if you test if the temporal trend differs among sites: count \~ cover + mined + time + (1 + time \| site) + (1 \| site:samplingstation)
 
 4.  What is the **conditional response distribution** in a Poisson regression (or in any glm or glmm? In a generalized linear model as a Poisson regression, the conditional response distribution describes how the response variable $Y_i$ is distributed for a given set of predictor values.
 
@@ -235,11 +232,11 @@ Conditional on the predictors, the variance of the response equals its mean.
 
 The regression model then determines how this conditional mean depends on the predictors. With the usual log link:
 
-\beta\_0 + \beta*1 x*{1i} + \beta*2 x*{2i} + \cdots \$\$
+\beta\_0 + \beta*1 x*{1i} +* \beta*2 x{2i} + \cdots \$\$
 
 or equivalently,
 
-\exp( \beta\_0 + \beta*1 x*{1i} + \beta*2 x*{2i} + \cdots ). \$\$
+\exp( \beta\_0 + \beta*1 x*{1i} +* \beta*2 x{2i} + \cdots ). \$\$
 
 For example, suppose we model the number of salamanders as a function of tree cover:
 
