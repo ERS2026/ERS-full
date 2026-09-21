@@ -192,12 +192,12 @@ Some further notes on the model specification:
 
     - `(1 | site:sample)` accounts for extra variation specific to each site during each sampling occasion, caused partly by sampling different locations.
 
-2.  if each location within a site is sampled repeatedly, and has a permanent identifier 'location', that becomes an extra grouping factor and you model it explicitly as:
+2.  if the same samplingstations within each site are sampled repeatedly, and each has a permanent identifier 'samplingstation', that becomes an extra grouping factor and you model it explicitly as:
 
 ```         
-`count ~ cover + mined +  (1 | site) +  (1 | site:location) +  (1 | sample)`
+`count ~ cover + mined +  (1 | site) +  (1 | site:samplingstation) +  (1 | sample)`
 
-The term `(1 | site:location)` captures repeated measurements at the same location within a site, capturing spatial heterogeneity within each site. The term `(1 | site:sample)` captures occasion-specific variation across locations (e.g, the weather on each sampling day)
+The term `(1 | site:location)` captures repeated measurements at the same location within a site, capturing spatial heterogeneity within each site. Not that the term `(1 | site:sample)` does not appear in the model anymore, as  extra variation specific to each site during each sampling occasion, caused by sampling different locations is not relevant anymore as you are now sampling the same locations within a site repeatedly. The term `(1 | sample)` now captures variation across sampling rounds, e.g., due to weather on each sampling day.
 ```
 
 3.  For count responses, always check carefull for overdispersion, so if the variance of the **conditional response distribution** is larger than the mean. If so, use a negative binomial distribution:
@@ -205,6 +205,13 @@ The term `(1 | site:location)` captures repeated measurements at the same loca
     For a count response, also consider a negative-binomial model if the conditional response distribution is overdispersed (variance\>mean):
 
     `glmmTMB::glmmTMB( count ~ cover + mined + (1 | site) + (1 | site:sample),                                     family = glmmTMB::nbinom2)`
+
+4. if your different sampling rounds aim to capture a temporal trends, then time becomes a fixed effect and you can model it for example as:
+
+count ~ cover + mined + time + (1 | site) + (1 | site:samplingstation)
+where you may also consider a random slope for time, if you test if  the temporal trend differs among sites: 
+count ~ cover + mined + time +  (1 + time | site) +   (1 | site:samplingstation)
+
 
 4.  What is the **conditional response distribution** in a Poisson regression (or in any glm or glmm? In a generalized linear model as a Poisson regression, the conditional response distribution describes how the response variable $Y_i$ is distributed for a given set of predictor values.
 
