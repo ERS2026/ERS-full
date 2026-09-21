@@ -22,7 +22,7 @@ library(glmmTMB)
 library(patchwork)
 ```
 
-The example study contains repeated counts of salamanders in mountain stream. The authors sampled 23 stream sites, each repeatedly sampled four times. Some sites were affected by mountaintop-removal coal mining, so a central question is how salamander abundance differs between mined and unmined streams.
+The example study originates from a study by Price et al. (2015), and contains repeated counts of salamanders in mountain stream in central Appalachia, USA. The study was done to explore how mining activities, including mountain top mining and valley filling (VF) affect stream ecosystems, where salamanders are the main vertebrates in the system. The authors sampled 23 stream sites on presence of salamanders, each repeatedly sampled four times. A central question is how salamander abundance differs between mined and unmined streams.
 
 # Data structure
 
@@ -64,6 +64,8 @@ table(dat$site, dat$mined)
 table(dat$site, dat$sample)
 ```
 
+You see that there are 12 reference sites (R-1 - R-12) and 11 sites subject to valley filling (mining) (VF-1 - VF-11). Each site has been sampled in each of the sampling rounds.
+
 ## Explore the response and predictors
 
 ```{r}
@@ -83,11 +85,13 @@ dat |>
   geom_smooth(method = "lm")
 ```
 
+You will see that there are differences between mined and unmined sites, but also variation between sites unrelated to mining. Cover objects in the stream also seems to play a role. However, you will notice that these data may do follow a normal distibution, as they are counts bound by zero, instead of being a continuous distribution. We will need to move beyond simple linear models for this dataset. Also the data are grouped: multiple sampling rounds are used for the same sites, making not all observations independent
+
 # Fixed-effects count models
 
 ## Cover only
 
-The first Poisson model estimates the association between vegetation cover and salamander count without accounting for mining status or site-level dependence.
+The first Poisson model that we fit estimates the association between vegetation cover and salamander count without accounting for mining status (a fixed factor you are interested in) or site-level dependence of multiple sample (a grouping or random factor). Not that for this type of generalized linear models, the regular test anova(m1) does not work here, that works only for `lm` models, not for `glmmTMB` models. But you can use anova(m1,m2) to compare `glmmTMB` models with a chi-square test. Instead of anova(m1), you can use `car::Anova(m1)` to get a type II or type III anova table for the `glmmTMB` model. That is especially informative if you have more predictors in your model and/or categorical predictors. A Type II ANOVA tests each main effect after accounting for the other main effects, but not for interactions involving that effect. A Type III ANOVA tests each term after accounting for all other terms in the model, including interactions.
 
 ```{r}
 #| label: fit-cover-model
@@ -97,7 +101,7 @@ m1 <- glmmTMB::glmmTMB(
   family = poisson(link = "log"),
   data = dat
 )
-
+car::Anova(m1,type=2)
 summary(m1)
 ```
 
@@ -115,10 +119,12 @@ m2 <- glmmTMB::glmmTMB(
 )
 
 summary(m2)
-car::Anova(m2)
+car::Anova(m2,type=2)
 anova(m1,m2)
 AIC(m1,m2)
 AIC(m1)-AIC(m2)
+MuMIn::model.sel(m1,m2)
+
 ```
 
 # Add site-level dependence
@@ -137,23 +143,20 @@ m3 <- glmmTMB::glmmTMB(
 )
 
 summary(m3)
-car::Anova(m3)
+car::Anova(m3,type=2)
 AIC(m2, m3)
+model.sel(m1,m2,m3)
 ```
 
 ## Add the nested sample effect
 
 If the sampling design contains repeated sample identifiers within each site, a nested random-effects structure can be written as:
 
-``` r
-(1 | site) + (1 | site:sample)
-```
+`(1 | site) + (1 | site:sample)`
 
 This is equivalent to the shorthand:
 
-``` r
-(1 | site/sample)
-```
+`(1 | site/sample)`
 
 The expanded form makes the two sources of variation explicit: variation among sites and additional variation among samples within sites.
 
@@ -174,14 +177,15 @@ DHARMa::testZeroInflation(simres_m4)
 
 
 summary(m4)
-car::Anova(m4)
+car::Anova(m4,type=2)
 AIC(m3, m4)
 AIC(m3)-AIC(m4)
+MuMIn::model.sel(m1,m2,m3,m4, m5)
 ```
 
 The final comparison asks whether adding the nested sample-level random effect improves the model enough to justify the extra complexity. The answer on the best model should be based on the check of the family of the model, model comparison, convergence, variance estimates, checks of assumptions etc and the sampling design—not on AIC alone. Use the similar checks as we did in script 11 for the generalized linear models.
 
-# Some further notes on the model specification:
+# Some further notes on the model specification and error distribution:
 
 1.  if locations within a site that are sampled at each sampling round are not permanent and not tracked, use as above:\
     `count ~ cover + mined + (1 | site) + (1 | site:sample)`
@@ -232,11 +236,11 @@ Conditional on the predictors, the variance of the response equals its mean.
 
 The regression model then determines how this conditional mean depends on the predictors. With the usual log link:
 
-\beta\_0 + \beta*1 x*{1i} +* \beta*2 x{2i} + \cdots \$\$
+\beta\_0 + \beta\*1 x*{1i} +* \beta\*2 x{2i} + \cdots \$\$
 
 or equivalently,
 
-\exp( \beta\_0 + \beta*1 x*{1i} +* \beta*2 x{2i} + \cdots ). \$\$
+\exp( \beta\_0 + \beta\*1 x*{1i} +* \beta\*2 x{2i} + \cdots ). \$\$
 
 For example, suppose we model the number of salamanders as a function of tree cover:
 
